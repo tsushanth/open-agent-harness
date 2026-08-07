@@ -48,14 +48,21 @@ harness/
   cli.py            # `oah "task description"` entrypoint
 
 data/trajectories/  # session logs land here (gitignored — this is your dataset, not the repo's)
-training/           # SFT scripts (see Roadmap — not yet implemented)
+training/           # dataset prep + axolotl LoRA config (see training/README.md — config is
+                     # written but not yet run; needs a real trajectory corpus first)
 ```
 
 ## Setup
 
-Requires Python 3.10+ and an OpenAI-compatible endpoint serving a tool-calling model
-(e.g. `vllm serve Qwen/Qwen2.5-Coder-7B-Instruct --enable-auto-tool-choice --tool-call-parser hermes`,
-or Ollama with a tool-calling-capable model).
+Requires Python 3.10+ and an OpenAI-compatible chat completions endpoint — any model works, no
+special tool-calling server config needed. The harness's tool-call protocol is plain text (see
+`harness/core/agent.py`'s system prompt), not dependent on a server's native function-calling
+support, since that proved unreliable in practice (see Status above).
+
+```bash
+vllm serve Qwen/Qwen2.5-Coder-7B-Instruct --max-model-len 8192
+# or: ollama run qwen2.5-coder:7b
+```
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
@@ -80,12 +87,16 @@ credentials in its environment.
 
 ## Roadmap
 
-1. **Harness** (done) — minimal tool set, agentic loop, trajectory logging.
-2. **Trajectory collection** — generate a corpus of tool-call trajectories: either distilled from
-   a stronger teacher model solving real coding tasks with this harness, or collected from your
-   own usage. Target format is already the harness's native JSONL output.
-3. **SFT** — fine-tune Qwen2.5-Coder (7B to start, 32B as a stretch) on the trajectory corpus using
-   LoRA via axolotl or trl. Training scripts land in `training/`.
+1. **Harness** (done, validated) — minimal tool set, agentic loop, trajectory logging. Confirmed
+   working end-to-end against a real Qwen2.5-Coder-7B-Instruct endpoint (see Status above).
+2. **Trajectory collection** (next) — generate a corpus of tool-call trajectories: either distilled
+   from a stronger teacher model solving real coding tasks with this harness, or collected from
+   your own usage. We have 2 example trajectories today; need dozens-to-low-hundreds across
+   varied task types before a training run is worth it.
+3. **SFT** (config written, not run) — `training/qwen2.5-coder-7b-lora.yaml` is a ready QLoRA config
+   for Qwen2.5-Coder-7B-Instruct via axolotl, plus `training/prepare_dataset.py` to build the
+   training set from `data/trajectories/`. Blocked on step 2 — see `training/README.md` for why
+   running it now would just overfit on almost no data.
 4. **Eval** — benchmark the fine-tuned model's tool-use behavior against the base model on a held-out
    task set (does it read before editing? does it stop when done? does it avoid unnecessary bash
    calls?).

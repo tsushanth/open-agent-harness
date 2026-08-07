@@ -1,0 +1,54 @@
+# axolotl LoRA SFT config for Qwen2.5-Coder-7B-Instruct on harness trajectories.
+# Run: python3 training/prepare_dataset.py first to produce training/train.jsonl,
+# then: accelerate launch -m axolotl.cli.train training/qwen2.5-coder-7b-lora.yaml
+#
+# Sized for a single 24GB GPU (RTX A5000/4090/3090) — the same class of pod used for
+# the harness smoke test. Bump micro_batch_size / drop load_in_4bit if running on
+# something bigger (A100 40GB+).
+
+base_model: Qwen/Qwen2.5-Coder-7B-Instruct
+model_type: AutoModelForCausalLM
+tokenizer_type: AutoTokenizer
+
+load_in_4bit: true
+adapter: qlora
+
+datasets:
+  - path: training/train.jsonl
+    type: chat_template
+    field_messages: messages
+
+chat_template: qwen_25  # matches Qwen2.5's native <|im_start|>/<|im_end|> + tool-call format
+
+sequence_len: 8192
+sample_packing: false  # trajectories vary a lot in length; packing risks cross-contaminating
+                        # tool-call context between unrelated sessions in the same pack
+
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+num_epochs: 3
+micro_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 2e-4
+lr_scheduler: cosine
+warmup_ratio: 0.03
+optimizer: paged_adamw_8bit
+
+bf16: auto
+gradient_checkpointing: true
+
+output_dir: ./training/out/qwen2.5-coder-7b-oah-lora
+
+logging_steps: 1
+save_strategy: epoch
+eval_strategy: "no"  # no held-out set yet — see Roadmap in the root README (Eval milestone)
