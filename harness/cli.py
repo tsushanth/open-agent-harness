@@ -12,6 +12,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="oah", description="Open Agent Harness — a Claude-Code-style CLI for open coding models.")
     parser.add_argument("task", nargs="?", help="Task description. If omitted, reads from stdin.")
     parser.add_argument("--yolo", action="store_true", help="Skip confirmation prompts for write/bash tool calls. Use with care.")
+    parser.add_argument(
+        "--verify",
+        metavar="CMD",
+        help="Shell command to run after the model declares the task done (e.g. a test suite or "
+        "'python3 -m py_compile file.py'). Its exit code is recorded in the trajectory's outcome, "
+        "so 'completed' actually means something more than 'the model stopped talking.'",
+    )
     args = parser.parse_args()
 
     task = args.task or sys.stdin.read()
@@ -22,7 +29,7 @@ def main() -> None:
     confirm_fn = (lambda *_: True) if args.yolo else _confirm
     agent = Agent(confirm_fn=confirm_fn)
     console.print(f"[bold cyan]Task:[/bold cyan] {task}\n")
-    result = agent.run(task)
+    result = agent.run(task, verify_cmd=args.verify)
     console.print(f"\n[bold green]Result:[/bold green]\n{result}")
 
 
