@@ -47,6 +47,16 @@ requires running several times that many tasks, or improving the harness/prompt 
 dominant `completed_no_tools_used` failure mode documented in `batch-2026-08-07-b/README.md`
 first — otherwise most runs are wasted GPU time on failures the dataset filter throws away anyway.
 
+**Tried and reverted:** injecting a synthetic few-shot priming exchange (a worked "add a function"
+task resolved correctly via a tool call, placed between the system prompt and the real task) to
+fix the above. This is a standard technique for steering weaker models and seemed like a safe bet.
+Tested live against the exact 6 tasks that had failed this way in batch b: it didn't just fail to
+help, it made things strictly worse — the model produced a completely empty response (not even
+prose) for the real task in all 6 retests, likely confused by the extra context length/pattern.
+Reverted rather than shipped. If you retry this idea, it's worth trying a *shorter* priming
+exchange (the one tested here was 6 messages) or priming via the system prompt text itself rather
+than fake conversation turns, before concluding the technique doesn't apply here at all.
+
 ## Config notes (`qwen2.5-coder-7b-lora.yaml`)
 
 - QLoRA (4-bit base + LoRA adapter) sized for a single 24GB GPU — same class of pod used for the
