@@ -4,6 +4,7 @@ from typing import Callable
 from harness.tools import DEFAULT_TOOLS, Tool
 
 from .model_client import ModelClient
+from .tool_parser import parse_tool_calls
 from .trajectory import TrajectoryLogger
 
 SYSTEM_PROMPT = """You are a coding agent operating inside a user's project directory.
@@ -11,7 +12,15 @@ You have tools to read/write/edit files, run shell commands, and search the code
 Work step by step: investigate before you change anything, make the smallest edit that
 satisfies the request, and verify your change (e.g. run tests or re-read the file) before
 declaring the task done. When you have finished, reply with a short summary and no further
-tool calls."""
+tool calls.
+
+To call a tool, emit EXACTLY one block of this form and nothing else in that turn:
+<tool_call>
+{"name": "<tool name>", "arguments": {<arguments as JSON>}}
+</tool_call>
+
+Only one tool call per turn. Wait for the result before calling another. When you are done,
+respond with plain text and no <tool_call> block."""
 
 ConfirmFn = Callable[[str, dict], bool]
 
@@ -22,6 +31,13 @@ def _default_confirm(tool_name: str, arguments: dict) -> bool:
 
 
 class Agent:
+    """Prefers a model's native OpenAI-style tool_calls when the serving stack
+    actually produces them, but doesn't depend on it: open-model serving setups
+    (vLLM tool-call-parser flags, chat templates) are inconsistent across model/
+    version combos in practice, so we also parse <tool_call>{...}</tool_call>
+    blocks directly out of the response text as documented in SYSTEM_PROMPT above.
+    Native tool_calls win if both happen to be present in the same turn."""
+
     def __init__(
         self,
         model_client: ModelClient | None = None,
@@ -50,8 +66,9 @@ class Agent:
             response = self.model_client.chat(messages=messages, tools=tool_schemas)
             choice = response.choices[0]
             message = choice.message
+            content = message.content or ""
 
-            assistant_entry: dict = {"role": "assistant", "content": message.content or ""}
+            assistant_entry: dict = {"role": "assistant", "content": content}
             if message.tool_calls:
                 assistant_entry["tool_calls"] = [
                     {
@@ -64,20 +81,29 @@ class Agent:
             messages.append(assistant_entry)
             logger.record(messages)
 
-            if not message.tool_calls:
-                final_text = message.content or ""
+            if message.tool_calls:
+                for tool_call in message.tool_calls:
+                    name = tool_call.function.name
+                    try:
+                        arguments = json.loads(tool_call.function.arguments or "{}")
+                    except json.JSONDecodeError:
+                        arguments = {}
+                    result_text = self._execute(name, arguments)
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tool_call.id, "content": result_text}
+                    )
+                logger.record(messages)
+                continue
+
+            parsed_calls = parse_tool_calls(content)
+            if not parsed_calls:
+                final_text = content
                 outcome = "completed"
                 break
 
-            for tool_call in message.tool_calls:
-                result_text = self._execute_tool_call(tool_call)
-                messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": result_text,
-                    }
-                )
+            for call in parsed_calls:
+                result_text = self._execute(call.name, call.arguments)
+                messages.append({"role": "user", "content": f"<tool_result>{result_text}</tool_result>"})
             logger.record(messages)
         else:
             final_text = "Stopped: reached max_turns without completion."
@@ -85,13 +111,7 @@ class Agent:
         logger.flush(outcome=outcome)
         return final_text
 
-    def _execute_tool_call(self, tool_call) -> str:
-        name = tool_call.function.name
-        try:
-            arguments = json.loads(tool_call.function.arguments or "{}")
-        except json.JSONDecodeError:
-            return f"Error: could not parse arguments for {name}"
-
+    def _execute(self, name: str, arguments: dict) -> str:
         tool = self.tools_by_name.get(name)
         if tool is None:
             return f"Error: unknown tool {name}"
@@ -99,5 +119,8 @@ class Agent:
         if tool.requires_confirmation and not self.confirm_fn(name, arguments):
             return "User declined to run this tool call."
 
-        result = tool.execute(**arguments)
+        try:
+            result = tool.execute(**arguments)
+        except TypeError as e:
+            return f"Error: bad arguments for {name}: {e}"
         return result.output
