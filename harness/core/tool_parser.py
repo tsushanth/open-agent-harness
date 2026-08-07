@@ -13,7 +13,7 @@ _TAG_PATTERN = re.compile(
     re.DOTALL,
 )
 _FENCE_PATTERN = re.compile(
-    r"```(?:json)?\s*(\{.*?\"name\"\s*:.*?\})\s*```",
+    r"```(?:\w+)?\s*(\{.*?\"name\"\s*:.*?\})\s*```",
     re.DOTALL,
 )
 
@@ -46,6 +46,29 @@ def parse_tool_calls(content: str) -> list[ParsedToolCall]:
         if parsed is not None:
             calls.append(parsed)
 
+    if calls:
+        return calls
+
+    return _scan_bare_json_objects(content)
+
+
+def _scan_bare_json_objects(content: str) -> list[ParsedToolCall]:
+    """Last-resort fallback for weaker instruction-following: a small model may drop
+    the <tool_call> wrapper and code fence entirely and just emit the raw JSON object.
+    Uses JSONDecoder.raw_decode (rather than a balanced-braces regex, which can't
+    handle nested objects in `arguments` correctly) to find valid JSON objects
+    anywhere a '{' appears."""
+    decoder = json.JSONDecoder()
+    calls: list[ParsedToolCall] = []
+    for idx, char in enumerate(content):
+        if char != "{":
+            continue
+        try:
+            data, _ = decoder.raw_decode(content, idx)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(data, dict) and isinstance(data.get("name"), str) and isinstance(data.get("arguments"), dict):
+            calls.append(ParsedToolCall(name=data["name"], arguments=data["arguments"]))
     return calls
 
 

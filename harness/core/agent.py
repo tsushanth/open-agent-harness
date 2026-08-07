@@ -7,20 +7,32 @@ from .model_client import ModelClient
 from .tool_parser import parse_tool_calls
 from .trajectory import TrajectoryLogger
 
-SYSTEM_PROMPT = """You are a coding agent operating inside a user's project directory.
-You have tools to read/write/edit files, run shell commands, and search the codebase.
+def build_system_prompt(tools: list[Tool]) -> str:
+    # Tool names/schemas are spelled out here as text rather than relied on via the
+    # API's native `tools=` field: without it, a 7B model has nothing to ground tool
+    # names on and will invent plausible-sounding ones (observed: it called a nonexistent
+    # "cat" tool once this wasn't included). This list IS the model's only source of truth
+    # for what's callable.
+    tool_docs = "\n\n".join(
+        f"- {t.name}: {t.description}\n  arguments schema: {json.dumps(t.parameters)}" for t in tools
+    )
+    return f"""You are a coding agent operating inside a user's project directory.
 Work step by step: investigate before you change anything, make the smallest edit that
 satisfies the request, and verify your change (e.g. run tests or re-read the file) before
 declaring the task done. When you have finished, reply with a short summary and no further
 tool calls.
 
+Available tools:
+{tool_docs}
+
 To call a tool, emit EXACTLY one block of this form and nothing else in that turn:
 <tool_call>
-{"name": "<tool name>", "arguments": {<arguments as JSON>}}
+{{"name": "<tool name>", "arguments": {{<arguments as JSON>}}}}
 </tool_call>
 
-Only one tool call per turn. Wait for the result before calling another. When you are done,
-respond with plain text and no <tool_call> block."""
+Use only the tool names listed above, exactly as spelled. Only one tool call per turn.
+Wait for the result before calling another. When you are done, respond with plain text
+and no <tool_call> block."""
 
 ConfirmFn = Callable[[str, dict], bool]
 
@@ -54,16 +66,14 @@ class Agent:
     def run(self, task: str, logger: TrajectoryLogger | None = None) -> str:
         logger = logger or TrajectoryLogger()
         messages: list[dict] = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": build_system_prompt(self.tools)},
             {"role": "user", "content": task},
         ]
-        tool_schemas = [t.to_openai_schema() for t in self.tools]
-
         final_text = ""
         outcome = "incomplete"
 
         for _ in range(self.max_turns):
-            response = self.model_client.chat(messages=messages, tools=tool_schemas)
+            response = self.model_client.chat(messages=messages)
             choice = response.choices[0]
             message = choice.message
             content = message.content or ""
