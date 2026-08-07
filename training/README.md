@@ -33,13 +33,19 @@ Eval milestone in the root README needs to close.
 
 ## Status: not yet run
 
-We have 6 real trajectories in `data/trajectories/` (2 loose examples + a 4-session batch in
-`batch-2026-08-07/`), 2 of which pass `prepare_dataset.py`'s filter — kept as reference / regression
-checks for the harness itself, not real training data yet. The config above is unvalidated against
-a real training run. **Do not run this yet** — with a training set this small, SFT would just
-badly overfit on almost nothing rather than teach general tool-use behavior. The next real
-milestone is trajectory collection at scale (dozens to low-hundreds of diverse tasks) before a
-training run is worth the GPU cost.
+We have 16 real trajectories in `data/trajectories/` (2 loose examples + two batches of 4 and 10),
+4 of which pass `prepare_dataset.py`'s filter — kept as reference / regression checks for the
+harness itself, not real training data yet. The config above is unvalidated against a real
+training run. **Do not run this yet** — with a training set this small, SFT would just badly
+overfit on almost nothing rather than teach general tool-use behavior. The next real milestone is
+trajectory collection at scale (dozens to low-hundreds of diverse tasks) before a training run is
+worth the GPU cost.
+
+Worth noting for whoever collects that larger corpus: the real pass rate observed so far (3/14,
+21%, across the two verified batches) means getting to "dozens of *passing* trajectories" likely
+requires running several times that many tasks, or improving the harness/prompt to reduce the
+dominant `completed_no_tools_used` failure mode documented in `batch-2026-08-07-b/README.md`
+first — otherwise most runs are wasted GPU time on failures the dataset filter throws away anyway.
 
 ## Config notes (`qwen2.5-coder-7b-lora.yaml`)
 
