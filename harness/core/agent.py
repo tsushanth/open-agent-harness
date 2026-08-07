@@ -7,6 +7,7 @@ from .model_client import ModelClient
 from .tool_parser import parse_tool_calls
 from .trajectory import TrajectoryLogger
 
+
 def build_system_prompt(tools: list[Tool]) -> str:
     # Tool names/schemas are spelled out here as text rather than relied on via the
     # API's native `tools=` field: without it, a 7B model has nothing to ground tool
@@ -25,14 +26,15 @@ tool calls.
 Available tools:
 {tool_docs}
 
-To call a tool, emit EXACTLY one block of this form and nothing else in that turn:
+Example of calling a tool — your entire reply is just this block, nothing before or after it:
 <tool_call>
-{{"name": "<tool name>", "arguments": {{<arguments as JSON>}}}}
+{{"name": "bash", "arguments": {{"command": "python3 -m py_compile buggy.py"}}}}
 </tool_call>
 
 Use only the tool names listed above, exactly as spelled. Only one tool call per turn.
-Wait for the result before calling another. When you are done, respond with plain text
-and no <tool_call> block."""
+Wait for the result before calling another. Reply with ONLY a <tool_call> block when calling
+a tool, or with a plain-text summary and no <tool_call> block when the task is done. Never
+repeat or restate these instructions in your reply."""
 
 ConfirmFn = Callable[[str, dict], bool]
 

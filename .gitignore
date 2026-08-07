@@ -6,5 +6,6 @@ build/
 dist/
 data/trajectories/*.jsonl
 !data/trajectories/example-successful-run.jsonl
+!data/trajectories/example-successful-run-2-cleaned-prompt.jsonl
 .env
 .DS_Store
