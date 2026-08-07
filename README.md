@@ -38,6 +38,13 @@ before use as training data (see `training/README.md`), and this specific failur
 done without being done, or drifting off a specified protocol — is exactly what SFT on curated
 trajectories is meant to correct. It's evidence for the project's core bet, not against it.
 
+One finding from that verification work *was* a real harness bug, not a model limitation: a model
+called `edit_file` with an empty `old_string` (meaning to create a new file — it should have used
+`write_file`), and Python's `str.replace("", ...)` semantics under `replace_all=True` inserted the
+new text between every character of the target file, ~165 bytes exploding to ~32KB of duplicated
+garbage in one tool call. Now rejected outright with a clear error steering the model toward
+`write_file` instead — see `training/README.md` for the full story and `tests/test_tools.py`.
+
 ## Why
 
 Claude Code and similar assistants pair a strong model with a tight agentic loop: a small tool

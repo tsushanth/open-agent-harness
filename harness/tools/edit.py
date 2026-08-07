@@ -26,6 +26,18 @@ class EditTool(Tool):
         if not file_path.exists():
             return ToolResult(output=f"File not found: {path}", is_error=True)
 
+        # An empty old_string is never a sensible edit, and Python's str.count("")/str.replace("", ...)
+        # semantics treat it as matching between every character — with replace_all this silently
+        # explodes a file's size by inserting new_string N+1 times for an N-character file. Observed
+        # directly: a model tried this for a "file doesn't exist yet" case (should have used
+        # write_file instead) and it corrupted a file from ~165 bytes to ~32KB in one call.
+        if old_string == "":
+            return ToolResult(
+                output="old_string cannot be empty. Use write_file to create a new file or "
+                "overwrite one's full contents; edit_file is for replacing an existing snippet.",
+                is_error=True,
+            )
+
         text = file_path.read_text()
         count = text.count(old_string)
 

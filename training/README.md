@@ -57,6 +57,23 @@ Reverted rather than shipped. If you retry this idea, it's worth trying a *short
 exchange (the one tested here was 6 messages) or priming via the system prompt text itself rather
 than fake conversation turns, before concluding the technique doesn't apply here at all.
 
+**Tried and kept:** the lighter-touch version of the same idea — appending one line to the task
+text itself ("If this requires changing a file, call write_file or edit_file...") rather than
+adding conversation turns. Tested live against the same 6 failing tasks: real improvement, tool-call
+attempt rate went from 0/6 to 3/6, no empty-response regression. See `_with_tool_reminder` in
+`harness/core/agent.py`.
+
+That same retest surfaced an unrelated but more important bug: a model called `edit_file` with
+`old_string=""` (meaning to create a new file — it should have used `write_file`), and
+`replace_all=True` combined with Python's `str.replace("", ...)` semantics inserted the new text
+between every character of the target file, turning a ~165 byte file into ~32KB of duplicated
+garbage. This wasn't a model reliability problem, it was a real input-validation gap in
+`EditTool` — fixed by rejecting an empty `old_string` outright (see `harness/tools/edit.py` and
+`tests/test_tools.py::test_edit_file_rejects_empty_old_string`). Worth calling out because it's
+the kind of bug that `--verify` caught but a naive "did the model say it's done" check wouldn't
+have — and the kind of gap that only surfaces from running the harness against a real model,
+not from synthetic/mocked testing alone.
+
 ## Config notes (`qwen2.5-coder-7b-lora.yaml`)
 
 - QLoRA (4-bit base + LoRA adapter) sized for a single 24GB GPU — same class of pod used for the

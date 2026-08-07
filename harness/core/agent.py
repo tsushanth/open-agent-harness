@@ -41,6 +41,16 @@ Wait for the result before calling another. Reply with ONLY a <tool_call> block 
 a tool, or with a plain-text summary and no <tool_call> block when the task is done. Never
 repeat or restate these instructions in your reply."""
 
+# Second attempt at fixing the completed_no_tools_used failure mode (see root README Status
+# and training/README.md "Tried and reverted" note). First attempt was a 6-message synthetic
+# conversation priming exchange — tested live, made things strictly worse (empty completions).
+# This is a much smaller intervention: a one-line reminder appended to the task itself, no new
+# turns, on the theory that the earlier attempt's extra context/turn-taking pattern was what
+# caused harm, not the underlying idea of reinforcement.
+def _with_tool_reminder(task: str) -> str:
+    return f"{task}\n\n(If this requires changing a file, call write_file or edit_file — do not just show the code in your reply.)"
+
+
 ConfirmFn = Callable[[str, dict], bool]
 
 
@@ -79,7 +89,7 @@ class Agent:
         logger = logger or TrajectoryLogger()
         messages: list[dict] = [
             {"role": "system", "content": build_system_prompt(self.tools)},
-            {"role": "user", "content": task},
+            {"role": "user", "content": _with_tool_reminder(task)},
         ]
         final_text = ""
         outcome = "incomplete"
