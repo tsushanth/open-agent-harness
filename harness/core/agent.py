@@ -23,6 +23,10 @@ satisfies the request, and verify your change (e.g. run tests or re-read the fil
 declaring the task done. When you have finished, reply with a short summary and no further
 tool calls.
 
+If the task requires changing a file, you MUST use write_file or edit_file to actually make
+that change. Printing the new code in your reply does NOT change the file — only a tool call
+does. Never describe a change you haven't actually made with a tool call.
+
 Available tools:
 {tool_docs}
 

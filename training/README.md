@@ -22,6 +22,15 @@ containing a known bad pattern (the model echoing prompt instructions back — s
 observed while smoke-testing this harness; training on them uncorrected would just teach the
 fine-tuned model to repeat those failures.
 
+**Important caveat, found the hard way:** `outcome: "completed"` means the model stopped asking
+for tools — NOT that the task was actually accomplished. Observed directly: a task where the model
+printed new code as prose instead of calling `write_file`, then declared the (unchanged) file
+fixed. `prepare_dataset.py` cannot currently detect this class of failure; it's not a string
+pattern to match against like the echo bug. **Manually spot-check trajectories before training on
+them** — or write task-specific verification (e.g. "does the file actually compile after the
+session ends") before trusting `outcome: "completed"` at scale. This is exactly the gap the
+Eval milestone in the root README needs to close.
+
 ## Status: not yet run
 
 We have 2 example trajectories in `data/trajectories/` (kept as reference / regression checks for

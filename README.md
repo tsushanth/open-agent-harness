@@ -18,8 +18,25 @@ the tool-call loop below. A real trajectory from that run is at
 Notably, vLLM's native `--tool-call-parser` flag proved unreliable across model/version
 combinations in practice (a mismatched parser silently dropped tool calls; an invalid parser name
 crash-looped the server) — see `harness/core/tool_parser.py` for why the harness parses tool calls
-directly out of response text instead of depending on that flag. SFT training code and a released
-fine-tuned checkpoint are the next milestones (see Roadmap).
+directly out of response text instead of depending on that flag.
+
+**A more important finding from the same session, and the actual motivation for this project's
+SFT phase:** running a batch of varied tasks (add a function, fix a bug) against
+Qwen2.5-Coder-7B-Instruct surfaced two distinct base-model reliability gaps, even with a carefully
+worded system prompt:
+- One task, the model just printed the new code as prose in its reply instead of calling
+  `write_file`/`edit_file` — no file was actually changed, yet the loop still ended with the model
+  believing (and stating) the task was done.
+- Another task, after a prompt fix for the above, the model invented yet another ad hoc tool-call
+  format (pseudo-CLI flags: `edit_file --path "calc.py" --old_string ...`) that didn't match any
+  of the three formats the harness parses for.
+
+Neither is a harness bug — the harness correctly logs what happened either way. It's a base-model
+capability gap: **`outcome: "completed"` in a trajectory currently means "the model stopped
+requesting tools," not "the task was verified done."** Trajectories need a verification/review step
+before use as training data (see `training/README.md`), and this specific failure mode — sounding
+done without being done, or drifting off a specified protocol — is exactly what SFT on curated
+trajectories is meant to correct. It's evidence for the project's core bet, not against it.
 
 ## Why
 
