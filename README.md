@@ -10,9 +10,16 @@ sequences to fine-tune the underlying model on, closing the loop between "agent 
 
 ## Status
 
-Early. The harness (this repo, today) runs against any OpenAI-compatible tool-calling endpoint —
-a local vLLM/Ollama server serving Qwen2.5-Coder, or a hosted provider. SFT training code and a
-released fine-tuned checkpoint are the next milestones (see Roadmap).
+Harness validated end-to-end against a real endpoint: Qwen2.5-Coder-7B-Instruct served via vLLM
+on a rented GPU, given a Python file with a syntax error, correctly diagnosed and fixed it using
+the tool-call loop below. A real trajectory from that run is at
+[`data/trajectories/example-successful-run.jsonl`](data/trajectories/example-successful-run.jsonl).
+
+Notably, vLLM's native `--tool-call-parser` flag proved unreliable across model/version
+combinations in practice (a mismatched parser silently dropped tool calls; an invalid parser name
+crash-looped the server) — see `harness/core/tool_parser.py` for why the harness parses tool calls
+directly out of response text instead of depending on that flag. SFT training code and a released
+fine-tuned checkpoint are the next milestones (see Roadmap).
 
 ## Why
 
