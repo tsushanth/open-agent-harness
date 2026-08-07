@@ -108,8 +108,11 @@ credentials in its environment.
    working end-to-end against a real Qwen2.5-Coder-7B-Instruct endpoint (see Status above).
 2. **Trajectory collection** (next) — generate a corpus of tool-call trajectories: either distilled
    from a stronger teacher model solving real coding tasks with this harness, or collected from
-   your own usage. We have 2 example trajectories today; need dozens-to-low-hundreds across
-   varied task types before a training run is worth it.
+   your own usage. So far: 6 real sessions across 2 batches, 2 of which pass `prepare_dataset.py`'s
+   filter (see [`data/trajectories/batch-2026-08-07/README.md`](data/trajectories/batch-2026-08-07/README.md)
+   for a concrete pass/fail breakdown — this base model's real unassisted success rate on small,
+   well-specified tasks was 1 of 4 in that batch). Need dozens-to-low-hundreds across varied task
+   types before a training run is worth it.
 3. **SFT** (config written, not run) — `training/qwen2.5-coder-7b-lora.yaml` is a ready QLoRA config
    for Qwen2.5-Coder-7B-Instruct via axolotl, plus `training/prepare_dataset.py` to build the
    training set from `data/trajectories/`. Blocked on step 2 — see `training/README.md` for why

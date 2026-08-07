@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -55,3 +56,26 @@ def test_clean_messages_pass():
         {"role": "assistant", "content": "Task completed."},
     ]
     assert prepare_dataset.is_clean(messages) is True
+
+
+def test_main_recurses_into_batch_subdirectories(tmp_path, monkeypatch):
+    # Regression test: prepare_dataset.py's real-world data lives partly in batch-*/
+    # subdirectories (see data/trajectories/batch-2026-08-07/), not just the top level.
+    input_dir = tmp_path / "trajectories"
+    batch_dir = input_dir / "batch-example"
+    batch_dir.mkdir(parents=True)
+
+    session = {
+        "outcome": "completed",
+        "messages": [{"role": "assistant", "content": "done"}],
+    }
+    (batch_dir / "session-1.jsonl").write_text(json.dumps(session) + "\n")
+
+    output_path = tmp_path / "train.jsonl"
+    monkeypatch.setattr(
+        sys, "argv", ["prepare_dataset.py", "--input", str(input_dir), "--output", str(output_path)]
+    )
+    prepare_dataset.main()
+
+    lines = output_path.read_text().strip().splitlines()
+    assert len(lines) == 1

@@ -70,7 +70,7 @@ def main() -> None:
 
     kept, dropped = 0, 0
     with output_path.open("w") as out:
-        for session_file in sorted(input_dir.glob("*.jsonl")):
+        for session_file in sorted(input_dir.glob("**/*.jsonl")):
             with session_file.open() as f:
                 record = json.loads(f.readline())
 

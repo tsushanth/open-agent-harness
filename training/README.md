@@ -33,12 +33,13 @@ Eval milestone in the root README needs to close.
 
 ## Status: not yet run
 
-We have 2 example trajectories in `data/trajectories/` (kept as reference / regression checks for
-the harness itself, not real training data) and the config above is unvalidated against a real
-training run. **Do not run this yet** — with a training set this small, SFT would just badly
-overfit on almost nothing rather than teach general tool-use behavior. The next real milestone is
-trajectory collection at scale (dozens to low-hundreds of diverse tasks) before a training run is
-worth the GPU cost.
+We have 6 real trajectories in `data/trajectories/` (2 loose examples + a 4-session batch in
+`batch-2026-08-07/`), 2 of which pass `prepare_dataset.py`'s filter — kept as reference / regression
+checks for the harness itself, not real training data yet. The config above is unvalidated against
+a real training run. **Do not run this yet** — with a training set this small, SFT would just
+badly overfit on almost nothing rather than teach general tool-use behavior. The next real
+milestone is trajectory collection at scale (dozens to low-hundreds of diverse tasks) before a
+training run is worth the GPU cost.
 
 ## Config notes (`qwen2.5-coder-7b-lora.yaml`)
 
