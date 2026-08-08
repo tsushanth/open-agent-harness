@@ -123,30 +123,27 @@ credentials in its environment.
    refactors, and multi-step tasks instead. Lower pass rate there is expected (harder task shapes)
    and not a regression — see
    [`batch-2026-08-08-e/README.md`](data/trajectories/batch-2026-08-08-e/README.md).
-3. **SFT** (done, reliable) — trained `training/qwen2.5-coder-7b-lora.yaml`'s QLoRA config against
-   the 45-example corpus. Loss converges cleanly over 3 epochs (~0.11 → ~0.04-0.06 across runs),
-   producing a real 154MB LoRA adapter (40M trainable params, 0.53% of the 7.6B total). Hit and
+3. **SFT** (done, reliable) — trained `training/qwen2.5-coder-7b-lora.yaml`'s QLoRA config twice
+   (45-example corpus, then 51 after batch h). Loss converges cleanly over 3 epochs each time,
+   producing a real ~154MB LoRA adapter (40M trainable params, 0.53% of the 7.6B total). Hit and
    fixed a real training-time bug along the way: axolotl auto-enables a fused CUDA kernel
    optimization that crashed with a misleading "NVIDIA driver too old" error on 4 of 6 rented
-   hosts — root-caused to specific config flags and disabled in the config, confirmed fixed on 2
-   more hosts afterward. See `training/README.md`. The adapter isn't committed to this repo (154MB
+   hosts — root-caused to specific config flags and disabled in the config, confirmed fixed on
+   4 hosts afterward. See `training/README.md`. The adapter isn't committed to this repo (154MB
    exceeds GitHub's 100MB limit without LFS, and model weights belong in a model registry, not a
    git repo) — reproduce it with the command there, or wait for the Release step below.
-4. **Eval** (done) — benchmark the fine-tuned model against the base model on a held-out task set
-   of 10 tasks in fresh domains never seen in training. **Base: 8/10 (80%). LoRA-adapted: 6/10
-   (60%) — the fine-tune performed worse.** A real, specific finding, not a broken eval or a
-   regression from noise: the LoRA model fixed the one task base failed via "printed code instead
-   of calling a tool" (exactly what the training corpus targeted), but newly failed 3 tasks base
-   passed — always by calling a tool and getting the wrong answer, never by skipping the tool call.
-   Read together: 45 training examples, almost all "add a function to a file," taught "always
-   attempt a tool call" at some cost to correctness elsewhere — a plausible small/narrow-dataset
-   overfitting signature. See `eval/README.md` for the full breakdown and
-   [`lora-vs-base-2026-08-08.json`](eval/lora-vs-base-2026-08-08.json) for per-task results.
-   Getting this comparison working took 10 failed pod attempts trying to serve the adapter via
-   vLLM before abandoning that approach entirely in favor of
-   [`harness/core/local_model_client.py`](harness/core/local_model_client.py) — a `transformers`+
-   `peft` backend that runs in-process, no serving layer, and is now a real reusable part of the
-   harness (drop-in `ModelClient` replacement, tested).
+4. **Eval** (done, ongoing) — benchmark the fine-tuned model against the base model on a held-out
+   task set of 10 "add a function" tasks in fresh domains. Run 1 (45-example corpus): **base 8/10,
+   LoRA 6/10** — a specific, non-random regression (LoRA over-learned "always call a tool," at
+   some cost to correctness). Run 2 (51 examples, +6 diverse bug-fix/refactor tasks): **base 7/10
+   (sampling variance), LoRA 6/10 — identical task-by-task pattern to run 1.** Not a null result:
+   the eval set is entirely "add a function" tasks, so it can't detect whether the new bug-fix/
+   refactor training examples helped with bug-fixing or refactoring — that needs its own held-out
+   eval set, not yet built. See `eval/README.md` for full detail. Getting *any* working comparison
+   took 10 failed pod attempts trying to serve the adapter via vLLM before abandoning that entirely
+   for [`harness/core/local_model_client.py`](harness/core/local_model_client.py) — a
+   `transformers`+`peft` backend that runs in-process, no serving layer, now a real reusable part
+   of the harness (drop-in `ModelClient` replacement, tested, used successfully twice).
 5. **Release** (not started) — publish the LoRA adapter (and merged weights, if licensing allows)
    on Hugging Face. Needs a Hugging Face account/token — not yet configured for this project. Given
    the eval result above, worth collecting more/broader trajectory data and re-training before

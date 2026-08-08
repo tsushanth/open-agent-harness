@@ -8,32 +8,36 @@ signal during trajectory collection (see `data/trajectories/batch-2026-08-08-c/R
 
 ## Result
 
-| Model | Pass rate |
-|---|---|
-| Base (Qwen2.5-Coder-7B-Instruct) | **8/10 (80%)** |
-| Base + LoRA adapter (this project's SFT, 45 training examples) | **6/10 (60%)** |
+Ran twice: once against the 45-example corpus (almost entirely "add a function to a file"), once
+after adding 6 deliberately different tasks (bug fixes, refactors, multi-step) for a 51-example
+corpus (see `data/trajectories/batch-2026-08-08-e/README.md`).
 
-Full per-task breakdown: [`lora-vs-base-2026-08-08.json`](lora-vs-base-2026-08-08.json).
+| Model | Run 1 (45 examples) | Run 2 (51 examples, +diverse tasks) |
+|---|---|---|
+| Base (Qwen2.5-Coder-7B-Instruct) | 8/10 (80%) | 7/10 (70%) |
+| Base + LoRA adapter | 6/10 (60%) | 6/10 (60%) — **identical task-by-task pattern to run 1** |
 
-**The fine-tune performed worse than the base model on held-out tasks.** This is a real,
-meaningful result, not a broken eval — it's exactly the overfitting risk flagged throughout
-`training/README.md` from the start: 45 examples is small, and this is direct evidence it wasn't
-enough to teach general tool-use behavior without cost elsewhere.
+Full per-task breakdown: [`lora-vs-base-2026-08-08.json`](lora-vs-base-2026-08-08.json) (run 1),
+[`lora-vs-base-2026-08-08-retrain.json`](lora-vs-base-2026-08-08-retrain.json) (run 2).
 
-The failure pattern is specific, not random noise, which is what makes this a genuine finding
-rather than an artifact:
-- The one task the base model failed via `completed_no_tools_used` (printed code as prose instead
-  of calling a tool — `cylinder_volume`), the **LoRA model fixed**. This is exactly the behavior
-  the training corpus was built to correct, and it worked on this held-out task.
-- But the LoRA model newly failed 3 tasks the base model passed (`ship`, `top_player`,
-  `km_to_miles`) — and in every one of those cases, unlike the base model's failures, it *did*
-  call a tool, just got the wrong result. None of the LoRA failures are `no_tools_used`.
+**Run 1: the fine-tune performed worse than the base model, in a specific, non-random pattern.**
+The one task base failed via `completed_no_tools_used` (printed code as prose instead of calling
+a tool — `cylinder_volume`), LoRA fixed — exactly what the training corpus targeted. But LoRA
+newly failed 3 tasks base passed (`ship`, `top_player`, `km_to_miles`), always by calling a tool
+and getting the wrong result, never by skipping it. Read together: the fine-tune learned "always
+attempt a tool call" from a corpus that was almost entirely that one task shape, at some cost to
+correctness elsewhere — a plausible small/narrow-dataset overfitting signature.
 
-Read together: the fine-tune successfully learned "always attempt a tool call" from the training
-corpus (which is almost entirely "add a function to a file" tasks resolved via `write_file`/
-`edit_file`), but at the cost of correctness on some tasks it would have gotten right by being
-more careful — a plausible small-dataset overfitting signature, not a broken model. 45 examples
-skewed toward one narrow task shape (single-function additions) taught a narrow lesson.
+**Run 2, after adding task-shape diversity: no change on this eval set.** Base's score moved (8→7,
+model sampling variance at temperature>0, not a real change — this eval set isn't held perfectly
+fixed run to run in terms of model behavior). LoRA's score and *exact task-by-task pattern* were
+identical to run 1. This makes sense in hindsight rather than being a null result: **the 6 new
+training examples were bug-fixes/refactors, and this held-out eval set is entirely "add a
+function" tasks** — there was no reason to expect the new examples to move the needle on a
+benchmark that doesn't test what they taught. The eval set itself needs its own diversity (bug-fix
+and refactor held-out tasks) to actually test whether the corpus diversification helped — that
+wasn't built this round. Don't read run 2 as "diversifying the corpus didn't help"; read it as
+"this specific eval doesn't measure what changed."
 
 ## How this was actually run
 
@@ -60,14 +64,16 @@ second pod — training and eval ran back-to-back inside one pod. Much slower pe
 
 ## Next steps
 
-- **More trajectory volume, more task-shape diversity.** The current corpus is almost entirely
-  "add a function/method to a file" — the eval result suggests that narrowness, not just the
-  count, contributed to the regression. Bug fixes, refactors, and search-heavy tasks are
-  underrepresented; batches so far were designed to be pass/fail-verifiable more than
-  representative of real usage.
-- **Re-run this same 10-task eval** after any future training run, using `LocalModelClient` (now
-  proven) rather than re-attempting vLLM serving.
+- **Build a second held-out eval set that includes bug-fix and refactor tasks**, not just
+  "add a function." The current 10-task set can only measure whether training changes affect
+  that one task shape — run 2 above is the direct lesson: it couldn't detect whether batch h's
+  diversification helped, because nothing in the eval set tests bug-fixing or refactoring.
+- **More trajectory volume across all task shapes**, not just more of the same. 51 examples is
+  still small for a 7B model; the corpus needs both more bug-fix/refactor examples specifically
+  (batch h was a first, 6-example start) and more raw volume generally.
+- Keep using `LocalModelClient` for future eval runs — proven twice now, no serving-layer
+  debugging needed either time.
 - If real serving throughput is needed later (e.g. evaluating on dozens of tasks quickly), revisit
   vLLM with a custom pre-built Docker image (axolotl + a tested-compatible vLLM baked in once)
-  rather than fresh `pip install`s per pod — none of the three serving failures above were
-  reliably reproducible enough to trust a fresh install each time.
+  rather than fresh `pip install`s per pod — none of the three serving failures documented above
+  were reliably reproducible enough to trust a fresh install each time.
