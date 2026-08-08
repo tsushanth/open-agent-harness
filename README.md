@@ -115,44 +115,48 @@ credentials in its environment.
    working end-to-end against a real Qwen2.5-Coder-7B-Instruct endpoint (see Status above).
 2. **Trajectory collection** (in progress) — generate a corpus of tool-call trajectories: either
    distilled from a stronger teacher model solving real coding tasks with this harness, or
-   collected from your own usage. So far: 95 real sessions across 8 batches + 2 loose examples,
-   51 of which pass `prepare_dataset.py`'s filter. Pass rate by batch: 25% (a) → 20% (b) → 64% (c)
-   → 69% (d) → 36% (e, confounded by shared-file batch design) → 83% (f) → 58% (g) → 55% (h).
-   Batches a-g were almost entirely "add a function/method to a file" — the eval result below
-   suggested that narrowness caused overfitting, so batch h deliberately shifted to bug fixes,
-   refactors, and multi-step tasks instead. Lower pass rate there is expected (harder task shapes)
-   and not a regression — see
+   collected from your own usage. So far: 93 real sessions across 8 batches + 2 loose examples,
+   48 of which pass `prepare_dataset.py`'s filter. Pass rate by batch: 25% (a) → 20% (b) → 64% (c)
+   → 69% (d) → 36% (e, confounded by shared-file batch design) → 83% (f) → 58% (g) → 36% (h,
+   corrected — see below). Batches a-g were almost entirely "add a function/method to a file";
+   batch h deliberately shifted to bug fixes, refactors, and multi-step tasks. 2 of batch h's
+   originally-counted 6 passes turned out to be corrupted (see Eval below) and were removed — the
+   corpus and `prepare_dataset.py` are both now more conservative because of it, including a new
+   safeguard that drops any session over 20 messages by default. See
    [`batch-2026-08-08-e/README.md`](data/trajectories/batch-2026-08-08-e/README.md).
-3. **SFT** (done, reliable) — trained `training/qwen2.5-coder-7b-lora.yaml`'s QLoRA config twice
-   (45-example corpus, then 51 after batch h). Loss converges cleanly over 3 epochs each time,
-   producing a real ~154MB LoRA adapter (40M trainable params, 0.53% of the 7.6B total). Hit and
-   fixed a real training-time bug along the way: axolotl auto-enables a fused CUDA kernel
-   optimization that crashed with a misleading "NVIDIA driver too old" error on 4 of 6 rented
-   hosts — root-caused to specific config flags and disabled in the config, confirmed fixed on
-   4 hosts afterward. See `training/README.md`. The adapter isn't committed to this repo (154MB
-   exceeds GitHub's 100MB limit without LFS, and model weights belong in a model registry, not a
-   git repo) — reproduce it with the command there, or wait for the Release step below.
-4. **Eval** (done — negative result, narrowed to a specific cause) — benchmark the fine-tuned model
+3. **SFT** (done, reliable) — trained `training/qwen2.5-coder-7b-lora.yaml`'s QLoRA config four
+   times across two corpus versions and two recipes. Loss converges cleanly every time, producing
+   a real ~154MB LoRA adapter (40M trainable params, 0.53% of the 7.6B total). Hit and fixed a real
+   training-time bug along the way: axolotl auto-enables a fused CUDA kernel optimization that
+   crashed with a misleading "NVIDIA driver too old" error on 4 of 6 rented hosts — root-caused to
+   specific config flags and disabled in the config, confirmed fixed on 4 hosts afterward. See
+   `training/README.md`. The adapter isn't committed to this repo (154MB exceeds GitHub's 100MB
+   limit without LFS, and model weights belong in a model registry) — reproduce it with the
+   command there, or wait for the Release step below.
+4. **Eval** (done — real, reproducible, not yet fully explained) — benchmark the fine-tuned model
    against base on two held-out sets: Set A (10 "add a function" tasks) and Set B (8 bug-fix/
-   refactor tasks, added to test whether corpus diversification helped). Every checkpoint so far
-   underperforms base on Set B specifically. The investigation had two stages:
-   - **Stage 1** (recipe hypothesis): Set A run 1 (45 ex) base 8/10 vs. LoRA 6/10; Set A run 2
-     (51 ex) base 7/10 vs. LoRA 6/10 (identical pattern); **Set B (51 ex) base 6/8 vs. LoRA
-     3/8 — the biggest gap, on the exact task shape the new training data targeted.** Ruled out
-     "corpus too narrow" (Set B's examples directly targeted bug-fixing) in favor of "training
-     recipe too aggressive" (3 epochs, `learning_rate: 2e-4` — a catastrophic-forgetting shape).
-   - **Stage 2** (tested that hypothesis): trained a "gentle" variant (1 epoch, `5e-5`,
-     `qwen2.5-coder-7b-lora-gentle.yaml`) and re-ran both sets. **Set A recovered to 7/10 (near
-     base), but Set B stayed exactly 3/8 with the identical failure pattern.** So the recipe
-     hypothesis was only half right — over-aggressive training explains Set A's regression but not
-     Set B's, which needs a different fix (more bug-fix training volume, or a bad example in the
-     current 6 — see `eval/README.md` for the full write-up and next steps).
+   refactor tasks). Ruled out two explanations for Set B's regression (base 6-7/8, LoRA always
+   exactly 3/8) via direct experiment, not guesswork:
+   - **Not the training recipe** — a "gentle" variant (1 epoch, `lr 5e-5` vs. the original 3
+     epochs/`2e-4`) recovered most of Set A's regression (6/10 → 7/10, near base) but left Set B
+     completely unchanged.
+   - **Not data corruption** — manually re-reading all 6 of batch h's "passing" trajectories found
+     2 genuinely corrupted ones (a 79-message repetition loop after an already-successful fix, and
+     a 51-message session that never actually edited the file but passed a behavioral-only verify
+     check anyway). Removed both, retrained clean — Set B: still exactly 3/8, identical failure
+     pattern, for the third time running.
+   - **What's left**: LoRA's 3 Set-B passes are the *same 3 tasks every time* across all 4
+     checkpoints, and always a strict subset of base's own passes — never a task base got wrong
+     that LoRA fixed. Leading hypothesis: applying *any* LoRA trained on this harness's tool-call
+     protocol has a small, consistent cost on this specific slice of bug-fixing ability, unrelated
+     to what data trained it. Not yet proven — see `eval/README.md` for the isolation test that
+     would confirm it (train on zero bug-fix examples, check if Set B still lands at exactly 3/8).
 
    Getting *any* working comparison took 10 failed pod attempts trying to serve the adapter via
    vLLM before abandoning that entirely for
    [`harness/core/local_model_client.py`](harness/core/local_model_client.py) — a `transformers`+
    `peft` backend that runs in-process, no serving layer, now a real reusable part of the harness
-   (drop-in `ModelClient` replacement, tested, used successfully across 4 eval runs).
+   (drop-in `ModelClient` replacement, tested, used successfully across 6 eval runs).
 5. **Release** (not started, deliberately) — publish the LoRA adapter (and merged weights, if
    licensing allows) on Hugging Face. Needs a Hugging Face account/token — not yet configured.
    Every checkpoint trained so far underperforms the base model on both eval sets; publishing one
