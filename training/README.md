@@ -33,12 +33,12 @@ Eval milestone in the root README needs to close.
 
 ## Status: not yet run
 
-We have 30 real trajectories in `data/trajectories/` (2 loose examples + three batches of 4, 10,
-and 14), 13 of which pass `prepare_dataset.py`'s filter. The config above is still unvalidated
-against a real training run. **Do not run this yet** — 13 examples is real progress from where
-this started but likely still too small to teach general tool-use behavior rather than memorize
-those 13 specific tasks. The next real milestone is more volume at the current (much higher)
-pass rate.
+We have 46 real trajectories in `data/trajectories/` (2 loose examples + four batches of 4, 10,
+14, and 16), 23 of which pass `prepare_dataset.py`'s filter. The config above is still unvalidated
+against a real training run. Pass rate held steady at ~65-70% across the two most recent batches
+(c: 64%, d: 69%), suggesting the current fixes have converged rather than the first jump being
+a fluke. 23 examples is real progress from where this started, though still likely on the small
+side for teaching general tool-use behavior rather than partially memorizing the training set.
 
 Pass rate by batch: 25% (a) → 20% (b) → **64% (c)**, after fixing the dominant
 `completed_no_tools_used` failure mode and a real `edit_file` corruption bug (both below). Batch

@@ -115,20 +115,19 @@ credentials in its environment.
    working end-to-end against a real Qwen2.5-Coder-7B-Instruct endpoint (see Status above).
 2. **Trajectory collection** (in progress) — generate a corpus of tool-call trajectories: either
    distilled from a stronger teacher model solving real coding tasks with this harness, or
-   collected from your own usage. So far: 30 real sessions across 3 batches + 2 loose examples,
-   13 of which pass `prepare_dataset.py`'s filter. Pass rate climbed batch over batch as real bugs
-   got fixed — 25% (batch a) → 20% (batch b) → **64% (batch c)**, after fixing the dominant
+   collected from your own usage. So far: 46 real sessions across 4 batches + 2 loose examples,
+   23 of which pass `prepare_dataset.py`'s filter. Pass rate climbed batch over batch as real bugs
+   got fixed — 25% (a) → 20% (b) → **64% (c)** → **69% (d)** — after fixing the dominant
    `completed_no_tools_used` failure mode (task-reminder text) and a real `edit_file` corruption
    bug (empty `old_string` guard). See
-   [`batch-2026-08-07-c/README.md`](data/trajectories/batch-2026-08-07-c/README.md) for the latest
-   per-task breakdown — batch c's remaining failures no longer share one dominant pattern, which
-   may mean this is close to the base model's real ceiling on this harness without SFT. Still need
-   more volume (dozens more passing examples) before a training run has enough data to teach
-   general behavior rather than memorize 13 examples.
+   [`batch-2026-08-08-a/README.md`](data/trajectories/batch-2026-08-08-a/README.md) for the latest
+   breakdown, including a methodology note about tasks sharing scratch files sequentially. Still
+   need more volume before a training run has enough data to teach general behavior rather than
+   memorize 23 examples, but the pass rate is high enough now that further batches are efficient.
 3. **SFT** (config written, not run) — `training/qwen2.5-coder-7b-lora.yaml` is a ready QLoRA config
    for Qwen2.5-Coder-7B-Instruct via axolotl, plus `training/prepare_dataset.py` to build the
-   training set from `data/trajectories/`. 13 examples is real progress but still likely too small
-   to avoid overfitting — see `training/README.md`.
+   training set from `data/trajectories/`. 23 examples is real progress but likely still on the
+   small side to avoid overfitting — see `training/README.md`.
 4. **Eval** — benchmark the fine-tuned model's tool-use behavior against the base model on a held-out
    task set (does it read before editing? does it stop when done? does it avoid unnecessary bash
    calls?).
