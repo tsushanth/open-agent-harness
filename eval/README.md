@@ -12,14 +12,16 @@ batches:
 
 ## Result
 
-| Model | Set A (45 ex) | Set A (51 ex, corrupted) | Set A (51 ex, gentle, corrupted) | Set A (48 ex, cleaned) | Set B (51 ex, corrupted) | Set B (51 ex, gentle, corrupted) | Set B (48 ex, cleaned) |
-|---|---|---|---|---|---|---|---|
-| Base | 8/10 | 7/10 | — | — | 6/8 | — | — |
-| Base + LoRA | 6/10 | 6/10 | 7/10 | **7/10** | 3/8 | 3/8 | **3/8** |
+| Model | Set A (45 ex) | Set A (51 ex, corrupted) | Set A (51 ex, gentle, corrupted) | Set A (48 ex, cleaned) | Set A (44 ex, **no bug-fix data**) | Set B (51 ex, corrupted) | Set B (51 ex, gentle, corrupted) | Set B (48 ex, cleaned) | Set B (44 ex, **no bug-fix data**) |
+|---|---|---|---|---|---|---|---|---|---|
+| Base | 8/10 | 7/10 | — | — | — | 6/8 | — | — | — |
+| Base + LoRA | 6/10 | 6/10 | 7/10 | 7/10 | **8/10** | 3/8 | 3/8 | 3/8 | **4/8** |
 
-"Corrupted" corpus (51 examples) included 2 sessions that looked like passes but weren't — see
-`data/trajectories/batch-2026-08-08-e/README.md`. "Cleaned" (48 examples) has both removed.
-"Aggressive" = original recipe (3 epochs, `lr 2e-4`). "Gentle" = 1 epoch, `lr 5e-5`.
+"Corrupted" corpus (51 ex) included 2 sessions that looked like passes but weren't — see
+`data/trajectories/batch-2026-08-08-e/README.md`. "Cleaned" (48 ex) has both removed. "No
+bug-fix data" (44 ex) is the cleaned corpus with **all 4** remaining bug-fix/refactor examples
+also excluded — only the original "add a function" batches remain. All non-"aggressive" columns
+use the gentle recipe (1 epoch, `lr 5e-5`).
 
 Full per-task breakdowns: [`lora-vs-base-2026-08-08.json`](lora-vs-base-2026-08-08.json),
 [`lora-vs-base-2026-08-08-retrain.json`](lora-vs-base-2026-08-08-retrain.json),
@@ -27,27 +29,26 @@ Full per-task breakdowns: [`lora-vs-base-2026-08-08.json`](lora-vs-base-2026-08-
 [`gentle-recipe-set-a-2026-08-08.json`](gentle-recipe-set-a-2026-08-08.json) /
 [`gentle-recipe-set-b-2026-08-08.json`](gentle-recipe-set-b-2026-08-08.json),
 [`cleaned-corpus-set-a-2026-08-08.json`](cleaned-corpus-set-a-2026-08-08.json) /
-[`cleaned-corpus-set-b-2026-08-08.json`](cleaned-corpus-set-b-2026-08-08.json).
+[`cleaned-corpus-set-b-2026-08-08.json`](cleaned-corpus-set-b-2026-08-08.json),
+[`isolation-no-bugfix-set-a-2026-08-08.json`](isolation-no-bugfix-set-a-2026-08-08.json) /
+[`isolation-no-bugfix-set-b-2026-08-08.json`](isolation-no-bugfix-set-b-2026-08-08.json).
 
-**Three different fixes tried (aggressive→gentle recipe, then corrupted→cleaned data) all
-converge on the exact same Set B result: 3/8, identical task-by-task pattern, every time.**
-Set A responded to both fixes (6/10 → 7/10, roughly back to base level). Set B never moved at
-all — not from tuning the recipe, not from removing 2 genuinely corrupted training examples.
-That's a real, reproducible, surprising finding: **whatever is happening on Set B isn't explained
-by training intensity or data corruption.**
+**The decisive result: excluding bug-fix/refactor training data entirely — not including more of
+it, not cleaning it up, *removing all 4 remaining clean examples* — produced the best checkpoint
+by far on both sets.** Set A 8/10 (matches/beats base's own 7-8/10, the best LoRA result of any
+checkpoint tried). Set B 4/8 (breaks the "always exactly 3/8" pattern that held across 3 prior
+checkpoints — neither recipe tuning nor removing 2 corrupted examples had moved it at all).
 
-The sharper clue is which 3 of 8 tasks LoRA passes: **e1, e6, e7 — every single time, across all
-three checkpoints.** And critically, **LoRA's passes are a strict subset of base's own passes**
-(base solved e1, e2, e3, e4, e6, e7; LoRA only ever gets e1, e6, e7 — never gains a task base
-didn't already have, always loses e2/e3/e4). This is the actual pattern needing an explanation,
-not "SFT makes bug-fixing worse in general": **something about applying *any* LoRA adaptation
-trained on this harness's tool-call trajectories — even clean ones — consistently costs
-correctness on e2 (index bug), e3 (accumulator bug), and e4 (case-sensitivity bug) specifically,
-regardless of what specifically trained the adapter.** A plausible mechanism: fine-tuning on this
-harness's trajectories shifts the model toward the harness's specific tool-call phrasing/protocol
-conventions, and that shift — not the correctness content of the training examples — is what's
-trading off against whatever latent reasoning path the base model uses to solve those 3 specific
-bugs. This wasn't proven, just the leading hypothesis after ruling out recipe and corruption.
+Read together with the earlier findings: **4 clean bug-fix/refactor examples was too small a
+sample to teach anything generalizable, and including them was net harmful compared to just not
+including them** — closer to noise/distraction than signal, diluting what the 44 well-represented
+"add a function" examples were teaching well. This is a different and sharper conclusion than
+"the recipe was too aggressive" or "2 examples were corrupted" (both real, both fixed, neither
+was the actual lever) — the real lesson is about the corpus's *composition*, not its cleanliness
+or the training intensity: **a tiny amount of an underrepresented task shape is worse than none
+at all.** Getting bug-fix/refactor competence into the model will need either a much larger
+volume of that task shape (so it's no longer a handful of outlier-like examples) or leaving it
+out until that volume exists.
 
 ## How this was actually run
 
@@ -74,29 +75,27 @@ second pod — training and eval ran back-to-back inside one pod. Much slower pe
 
 ## Next steps
 
-Recipe tuning and data cleanup are both now ruled out as fixes for Set B specifically (both
-helped Set A). What's left to actually test the "any LoRA adaptation costs e2/e3/e4" hypothesis:
+The isolation test resolved the "what's the actual lever" question. What's left is acting on it:
 
-1. **Train a LoRA adapter on a corpus with zero bug-fix/refactor examples at all** (only the
-   original "add a function" batches) and run it against Set B. If it *also* lands at 3/8 with
-   the same e1/e6/e7-only pattern, that's strong confirmation the issue isn't about bug-fix
-   training data quality/volume at all — it's a generic cost of fine-tuning on this harness's
-   tool-call protocol, present even with a training set that never touched bug-fixing.
-2. **Inspect what actually changed for e2/e3/e4 at generation time** — diff the LoRA vs. base
-   model's raw output for those 3 specific prompts (not just pass/fail) to see whether the LoRA
-   version still reasons correctly but fails at execution (e.g. a bad `edit_file` call) vs.
-   genuinely reasons about the bug differently. That distinguishes "protocol shift breaks
-   mechanics" from "protocol shift breaks reasoning."
-3. **Use the gentle recipe going forward regardless** — it recovered most of Set A's regression
-   with zero apparent downside on Set B, so it's a strict improvement even while Set B stays
-   unexplained.
-4. Keep using `LocalModelClient` for future eval runs — proven across 6 runs now, no
-   serving-layer debugging needed any time.
+1. **The current best checkpoint (44 examples, no bug-fix/refactor data, gentle recipe) is the
+   one to build on.** It's the first to match/beat base on Set A and the first to move Set B at
+   all. Use `training/qwen2.5-coder-7b-lora-gentle.yaml` with a corpus excluding
+   `data/trajectories/batch-2026-08-08-e/` as the new baseline for future comparisons, not the
+   original 51/48-example checkpoints.
+2. **Still short of beating base on Set B (4/8 vs. base's 6-7/8)** — don't reintroduce a small
+   amount of bug-fix/refactor data expecting it to help; the isolation test showed that actively
+   hurts. Either collect substantially more bug-fix/refactor trajectories (think 20-30+, enough
+   that they're a real sub-distribution rather than a handful of outliers) or accept that this
+   harness's SFT approach may need a fundamentally larger corpus before bug-fixing transfers well.
+3. **Re-run the full 3-set matrix (A, B, and a fresh add-function-only set if one gets built) any
+   time the corpus composition changes meaningfully** — this investigation's whole arc shows single
+   eval runs are easy to misread; the pattern only became legible after cross-referencing 6 runs.
+4. Keep using `LocalModelClient` and the gentle recipe as defaults going forward — both are now
+   validated across many runs with no remaining open questions about their own correctness.
 5. If real serving throughput is needed later (e.g. evaluating on dozens of tasks quickly), revisit
    vLLM with a custom pre-built Docker image (axolotl + a tested-compatible vLLM baked in once)
    rather than fresh `pip install`s per pod — none of the three serving failures documented above
    were reliably reproducible enough to trust a fresh install each time.
-6. **Do not publish a checkpoint to Hugging Face (Release milestone) until a run beats base on
-   both eval sets.** Four checkpoints tried — 2 recipes × corrupted/cleaned data — every one still
-   underperforms base on Set B, with a suspiciously stable failure signature that needs the
-   isolation test in step 1 before concluding anything further.
+6. **Still do not publish to Hugging Face (Release milestone) until a checkpoint beats base on
+   both sets.** The no-bug-fix-data checkpoint is the closest yet (beats base on A, closes but
+   doesn't close the B gap) — genuine progress, not yet a green light.

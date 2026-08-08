@@ -1,0 +1,56 @@
+{
+  "base": {
+    "label": "base",
+    "passed": null,
+    "total": 10,
+    "results": [],
+    "skipped": true
+  },
+  "lora": {
+    "label": "lora",
+    "passed": 8,
+    "total": 10,
+    "results": [
+      {
+        "task": "Add a cylinder_volume(r, h) function to h1_area_calc.py that",
+        "outcome": "completed_verified_pass"
+      },
+      {
+        "task": "Add a ship(sku, qty) method to the Warehouse class in h2_inv",
+        "outcome": "completed_verified_pass"
+      },
+      {
+        "task": "Add a snake_case(s) function to h3_string_ops.py that conver",
+        "outcome": "completed_verified_pass"
+      },
+      {
+        "task": "Add a max_depth(s) function to h4_bracket_check.py that retu",
+        "outcome": "completed_verified_pass"
+      },
+      {
+        "task": "Add a top_player() method to the Leaderboard class in h5_lea",
+        "outcome": "completed_verified_fail"
+      },
+      {
+        "task": "Add a km_to_miles(km) function to h6_unit_convert.py that re",
+        "outcome": "completed_verified_fail"
+      },
+      {
+        "task": "Add a highest_priority() method to the TaskQueue class in h7",
+        "outcome": "completed_verified_pass"
+      },
+      {
+        "task": "Add a normalize_hex(s) function to h8_validators2.py that lo",
+        "outcome": "completed_verified_pass"
+      },
+      {
+        "task": "Add a matrix_max(m) function to h9_matrix2.py that returns t",
+        "outcome": "completed_verified_pass"
+      },
+      {
+        "task": "Add a longest_decreasing_streak(nums) function to h10_streak",
+        "outcome": "completed_verified_pass"
+      }
+    ]
+  }
+}

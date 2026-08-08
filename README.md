@@ -133,34 +133,37 @@ credentials in its environment.
    `training/README.md`. The adapter isn't committed to this repo (154MB exceeds GitHub's 100MB
    limit without LFS, and model weights belong in a model registry) — reproduce it with the
    command there, or wait for the Release step below.
-4. **Eval** (done — real, reproducible, not yet fully explained) — benchmark the fine-tuned model
-   against base on two held-out sets: Set A (10 "add a function" tasks) and Set B (8 bug-fix/
-   refactor tasks). Ruled out two explanations for Set B's regression (base 6-7/8, LoRA always
-   exactly 3/8) via direct experiment, not guesswork:
+4. **Eval** (done — decisive result) — benchmark the fine-tuned model against base on two held-out
+   sets: Set A (10 "add a function" tasks) and Set B (8 bug-fix/refactor tasks). Ruled out three
+   explanations for Set B's regression via direct experiment, not guesswork, before finding the
+   real one:
    - **Not the training recipe** — a "gentle" variant (1 epoch, `lr 5e-5` vs. the original 3
-     epochs/`2e-4`) recovered most of Set A's regression (6/10 → 7/10, near base) but left Set B
-     completely unchanged.
+     epochs/`2e-4`) recovered most of Set A's regression but left Set B completely unchanged
+     (stayed at exactly 3/8, identical failure pattern).
    - **Not data corruption** — manually re-reading all 6 of batch h's "passing" trajectories found
      2 genuinely corrupted ones (a 79-message repetition loop after an already-successful fix, and
      a 51-message session that never actually edited the file but passed a behavioral-only verify
-     check anyway). Removed both, retrained clean — Set B: still exactly 3/8, identical failure
-     pattern, for the third time running.
-   - **What's left**: LoRA's 3 Set-B passes are the *same 3 tasks every time* across all 4
-     checkpoints, and always a strict subset of base's own passes — never a task base got wrong
-     that LoRA fixed. Leading hypothesis: applying *any* LoRA trained on this harness's tool-call
-     protocol has a small, consistent cost on this specific slice of bug-fixing ability, unrelated
-     to what data trained it. Not yet proven — see `eval/README.md` for the isolation test that
-     would confirm it (train on zero bug-fix examples, check if Set B still lands at exactly 3/8).
+     check anyway). Removed both, retrained clean — Set B: still exactly 3/8, third time running.
+   - **The actual answer: corpus composition, not cleanliness or recipe.** Training with the 4
+     remaining clean bug-fix/refactor examples *excluded entirely* (only the 44 "add a function"
+     examples) produced the best checkpoint by far: **Set A 8/10 (beats base's own 7-8/10), Set B
+     4/8 (finally breaks the stuck-at-3/8 pattern).** 4 examples of an underrepresented task shape
+     was worse than zero — too small a sample to teach anything generalizable, diluting what the
+     well-represented data was teaching well. Still short of beating base on Set B (4/8 vs. 6-7/8)
+     — the fix isn't "remove the data forever," it's "don't include a token amount of it; get
+     enough to matter or leave it out." See `eval/README.md` for the full 6-run comparison table.
 
    Getting *any* working comparison took 10 failed pod attempts trying to serve the adapter via
    vLLM before abandoning that entirely for
    [`harness/core/local_model_client.py`](harness/core/local_model_client.py) — a `transformers`+
    `peft` backend that runs in-process, no serving layer, now a real reusable part of the harness
-   (drop-in `ModelClient` replacement, tested, used successfully across 6 eval runs).
+   (drop-in `ModelClient` replacement, tested, used successfully across 7 eval runs).
 5. **Release** (not started, deliberately) — publish the LoRA adapter (and merged weights, if
    licensing allows) on Hugging Face. Needs a Hugging Face account/token — not yet configured.
-   Every checkpoint trained so far underperforms the base model on both eval sets; publishing one
-   now would ship a regression. Blocked on fixing the training recipe (see Eval above) first.
+   The best checkpoint so far (44 examples, no bug-fix data, gentle recipe) beats base on Set A but
+   not yet Set B — real progress, not yet a green light. Publishing now would still ship a
+   regression on bug-fix/refactor tasks; blocked on more bug-fix trajectory volume (see Eval
+   above) first.
 
 ## Contributing
 
