@@ -131,18 +131,25 @@ credentials in its environment.
    more hosts afterward. See `training/README.md`. The adapter isn't committed to this repo (154MB
    exceeds GitHub's 100MB limit without LFS, and model weights belong in a model registry, not a
    git repo) — reproduce it with the command there, or wait for the Release step below.
-4. **Eval** (half done, blocked on a different issue) — benchmark the fine-tuned model against the
-   base model on a held-out task set of 10 tasks in fresh domains never seen in training. **Base
-   model result: 8/10 (80%)**, consistent with the established 55-85% band. **LoRA-adapted result:
-   blocked** — not by the training issue above (that's resolved), but by a separate problem getting
-   vLLM to *serve* the trained adapter for live comparison: three different serving approaches (raw
-   `pip install vllm` in the training pod, a shared RunPod Network Volume with the proven
-   `vllm/vllm-openai` image, an older pinned vLLM version) each hit a different failure with no
-   clean fix found. 10 pod attempts total for this specific sub-problem. See `eval/README.md` for
-   the full detail and recommended next approaches (a custom pre-built Docker image, or evaluating
-   via plain `transformers`+`peft` instead of vLLM).
+4. **Eval** (done) — benchmark the fine-tuned model against the base model on a held-out task set
+   of 10 tasks in fresh domains never seen in training. **Base: 8/10 (80%). LoRA-adapted: 6/10
+   (60%) — the fine-tune performed worse.** A real, specific finding, not a broken eval or a
+   regression from noise: the LoRA model fixed the one task base failed via "printed code instead
+   of calling a tool" (exactly what the training corpus targeted), but newly failed 3 tasks base
+   passed — always by calling a tool and getting the wrong answer, never by skipping the tool call.
+   Read together: 45 training examples, almost all "add a function to a file," taught "always
+   attempt a tool call" at some cost to correctness elsewhere — a plausible small/narrow-dataset
+   overfitting signature. See `eval/README.md` for the full breakdown and
+   [`lora-vs-base-2026-08-08.json`](eval/lora-vs-base-2026-08-08.json) for per-task results.
+   Getting this comparison working took 10 failed pod attempts trying to serve the adapter via
+   vLLM before abandoning that approach entirely in favor of
+   [`harness/core/local_model_client.py`](harness/core/local_model_client.py) — a `transformers`+
+   `peft` backend that runs in-process, no serving layer, and is now a real reusable part of the
+   harness (drop-in `ModelClient` replacement, tested).
 5. **Release** (not started) — publish the LoRA adapter (and merged weights, if licensing allows)
-   on Hugging Face. Needs a Hugging Face account/token — not yet configured for this project.
+   on Hugging Face. Needs a Hugging Face account/token — not yet configured for this project. Given
+   the eval result above, worth collecting more/broader trajectory data and re-training before
+   publishing a checkpoint that currently underperforms the base model on held-out tasks.
 
 ## Contributing
 

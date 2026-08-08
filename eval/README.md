@@ -6,65 +6,68 @@ depth, leaderboard, unit conversion, task priority queue, hex color normalizatio
 decreasing streaks) — one task per file, matching the methodology that produced the cleanest
 signal during trajectory collection (see `data/trajectories/batch-2026-08-08-c/README.md`).
 
-## Results so far
+## Result
 
 | Model | Pass rate |
 |---|---|
-| Base (Qwen2.5-Coder-7B-Instruct) | **8/10 (80%)** — see `base-model-2026-08-08/` |
-| Base + LoRA adapter (this project's SFT) | **Blocked** — see below |
+| Base (Qwen2.5-Coder-7B-Instruct) | **8/10 (80%)** |
+| Base + LoRA adapter (this project's SFT, 45 training examples) | **6/10 (60%)** |
 
-Base model result is consistent with the 55-85% band established during trajectory collection
-(batches f/g), which is a useful sanity check: this held-out set isn't systematically easier or
-harder than the training-time task distribution.
+Full per-task breakdown: [`lora-vs-base-2026-08-08.json`](lora-vs-base-2026-08-08.json).
 
-## Why the LoRA-adapted run is blocked
+**The fine-tune performed worse than the base model on held-out tasks.** This is a real,
+meaningful result, not a broken eval — it's exactly the overfitting risk flagged throughout
+`training/README.md` from the start: 45 examples is small, and this is direct evidence it wasn't
+enough to teach general tool-use behavior without cost elsewhere.
 
-Serving base model + adapter together needs vLLM's `--enable-lora` flag, which means installing
-vLLM into the same pod that trained the adapter (to avoid transferring 154MB of weights out and
-back in). That install hit three real environment conflicts in sequence:
+The failure pattern is specific, not random noise, which is what makes this a genuine finding
+rather than an artifact:
+- The one task the base model failed via `completed_no_tools_used` (printed code as prose instead
+  of calling a tool — `cylinder_volume`), the **LoRA model fixed**. This is exactly the behavior
+  the training corpus was built to correct, and it worked on this held-out task.
+- But the LoRA model newly failed 3 tasks the base model passed (`ship`, `top_player`,
+  `km_to_miles`) — and in every one of those cases, unlike the base model's failures, it *did*
+  call a tool, just got the wrong result. None of the LoRA failures are `no_tools_used`.
 
-1. `flash_attn`'s compiled `.so` broke (ABI mismatch) after installing vllm bumped torch —
-   `VLLM_ATTENTION_BACKEND=XFORMERS` did **not** fix this; vLLM's RoPE code imports flash_attn
-   unconditionally regardless of the selected backend.
-2. Uninstalling the broken `flash_attn` fixed that, but surfaced a second conflict: two
-   incompatible `libcudnn` versions installed by axolotl and vllm's separate dependency trees.
-3. Isolating vLLM into its own venv (`python3 -m venv`) fixed both of the above at once. But the
-   *next* attempt — identical commands, hours later — failed differently: `pip install -U axolotl`
-   pulled a newer axolotl release whose torch dependency required a newer CUDA driver than two
-   different rented hosts had, even though the exact same command had trained successfully earlier
-   the same day. Confirmed on two separate physical machines, ruling out one bad host.
+Read together: the fine-tune successfully learned "always attempt a tool call" from the training
+corpus (which is almost entirely "add a function to a file" tasks resolved via `write_file`/
+`edit_file`), but at the cost of correctness on some tasks it would have gotten right by being
+more careful — a plausible small-dataset overfitting signature, not a broken model. 45 examples
+skewed toward one narrow task shape (single-function additions) taught a narrow lesson.
 
-Update: pinning `axolotl==0.18.0` did **not** fix it — same error, yet another host. Root cause
-found by grepping axolotl's source for the actual config flags (`lora_mlp_kernel`,
-`lora_qkv_kernel`, `lora_o_kernel`, `lora_embedding_kernel` — axolotl auto-enables a fused CUDA
-kernel optimization for QLoRA unless told not to; its own lazy re-init, separate from the main
-model load, was what crashed). **Disabling these in `training/qwen2.5-coder-7b-lora.yaml` fixed
-training** — confirmed on 2 more hosts after the fix, both trained successfully (vs. 4/4 failures
-before it). This is real, verified progress; see `training/README.md`.
+## How this was actually run
 
-Serving the resulting adapter for a live eval comparison hit a *different* wall after that: every
-attempt at running vLLM with `--enable-lora` alongside the adapter — installing vLLM fresh in the
-training pod (multiple dependency conflicts), via a RunPod Network Volume shared between a
-training pod and a second pod using the already-proven `vllm/vllm-openai` image (the image's fixed
-entrypoint can't run arbitrary shell, and attaching a network volume to it caused an immediate,
-silent crash-loop even with plain non-LoRA args — sanity-checked and confirmed), and finally
-installing an older pinned vLLM (`0.7.3`) inside the axolotl image again — all failed differently.
-The last attempt got furthest (model loading started) before dying silently with no traceback
-(pod uptime resets each time — consistent with an OOM-kill, not confirmed).
+Getting a working LoRA-vs-base comparison took far longer than expected — 10 pod attempts trying
+to serve the adapter via vLLM before abandoning that entirely:
 
-**Total for this specific sub-problem: 10 pod attempts, 4 distinct root causes found and fixed
-along the way** (flash_attn ABI break, libcudnn conflict, fused-kernel CUDA crash — this one fully
-resolved — and now this serving-specific crash, unresolved). Stopped here rather than continuing
-to debug blind with no logs on the failing image.
+1. Installing vLLM fresh alongside axolotl in the training pod: a `flash_attn` ABI break, then a
+   conflicting `libcudnn` version (isolating vLLM into its own venv fixed both).
+2. A RunPod Network Volume shared between a training pod and a second pod using the already-proven
+   `vllm/vllm-openai` image: that image's fixed entrypoint can't run arbitrary shell (so no
+   file-fetching before serving), and attaching a network volume to it caused an immediate silent
+   crash-loop even with plain non-LoRA args — sanity-checked and confirmed, never root-caused (no
+   log access on that image).
+3. An older pinned vLLM (`0.7.3`) back in the axolotl image: got further (model loading started)
+   before dying silently, no traceback, consistent with an OOM-kill but not confirmed.
 
-## Next step
+**What actually worked:** stopped trying to serve the adapter at all.
+[`harness/core/local_model_client.py`](../harness/core/local_model_client.py) runs a local
+`transformers` + `peft` model directly in-process — same `.chat()` interface as `ModelClient`, so
+it drops into `Agent` unmodified. `transformers` and `peft` are already installed by axolotl's own
+dependency tree, so this needed zero additional installs and no networking, no serving layer, no
+second pod — training and eval ran back-to-back inside one pod. Much slower per-request than vLLM
+(no continuous batching), irrelevant for a one-off 20-task eval.
 
-The training pipeline fix is solid and should be trusted going forward. The live LoRA-vs-base eval
-comparison needs a fundamentally different approach rather than more ad hoc pod debugging —
-candidates: (a) build a custom Docker image with axolotl + a compatible vLLM pre-installed and
-tested once, rather than fresh `pip install`s per pod; (b) get proper log access on whatever image
-serves the LoRA adapter (the `vllm/vllm-openai` image's fixed entrypoint blocks this); (c) skip
-vLLM's `--enable-lora` entirely and eval via plain `transformers` + `peft` generation instead,
-which is slower per-request but far simpler to get working and debug. Use the same 10 held-out
-tasks (reset the scratch files between runs) so any future comparison stays apples-to-apples with
-the base model's 8/10.
+## Next steps
+
+- **More trajectory volume, more task-shape diversity.** The current corpus is almost entirely
+  "add a function/method to a file" — the eval result suggests that narrowness, not just the
+  count, contributed to the regression. Bug fixes, refactors, and search-heavy tasks are
+  underrepresented; batches so far were designed to be pass/fail-verifiable more than
+  representative of real usage.
+- **Re-run this same 10-task eval** after any future training run, using `LocalModelClient` (now
+  proven) rather than re-attempting vLLM serving.
+- If real serving throughput is needed later (e.g. evaluating on dozens of tasks quickly), revisit
+  vLLM with a custom pre-built Docker image (axolotl + a tested-compatible vLLM baked in once)
+  rather than fresh `pip install`s per pod — none of the three serving failures above were
+  reliably reproducible enough to trust a fresh install each time.
