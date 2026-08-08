@@ -115,13 +115,14 @@ credentials in its environment.
    working end-to-end against a real Qwen2.5-Coder-7B-Instruct endpoint (see Status above).
 2. **Trajectory collection** (in progress) — generate a corpus of tool-call trajectories: either
    distilled from a stronger teacher model solving real coding tasks with this harness, or
-   collected from your own usage. So far: 84 real sessions across 7 batches + 2 loose examples,
-   45 of which pass `prepare_dataset.py`'s filter. Pass rate by batch: 25% (a) → 20% (b) → 64% (c)
-   → 69% (d) → 36% (e, confounded by shared-file batch design) → **83% (f)** → 58% (g). Batches f
-   and g both used strict one-task-per-file design (the fix for e's confound) and landed in a
-   55-85% band — the honest read is that's roughly the real ceiling for this
-   harness/model/fix combination, with natural batch-to-batch variance, not a single fixed number.
-   See [`batch-2026-08-08-d/README.md`](data/trajectories/batch-2026-08-08-d/README.md).
+   collected from your own usage. So far: 95 real sessions across 8 batches + 2 loose examples,
+   51 of which pass `prepare_dataset.py`'s filter. Pass rate by batch: 25% (a) → 20% (b) → 64% (c)
+   → 69% (d) → 36% (e, confounded by shared-file batch design) → 83% (f) → 58% (g) → 55% (h).
+   Batches a-g were almost entirely "add a function/method to a file" — the eval result below
+   suggested that narrowness caused overfitting, so batch h deliberately shifted to bug fixes,
+   refactors, and multi-step tasks instead. Lower pass rate there is expected (harder task shapes)
+   and not a regression — see
+   [`batch-2026-08-08-e/README.md`](data/trajectories/batch-2026-08-08-e/README.md).
 3. **SFT** (done, reliable) — trained `training/qwen2.5-coder-7b-lora.yaml`'s QLoRA config against
    the 45-example corpus. Loss converges cleanly over 3 epochs (~0.11 → ~0.04-0.06 across runs),
    producing a real 154MB LoRA adapter (40M trainable params, 0.53% of the 7.6B total). Hit and
