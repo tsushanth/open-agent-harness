@@ -34,11 +34,17 @@ back in). That install hit three real environment conflicts in sequence:
    different rented hosts had, even though the exact same command had trained successfully earlier
    the same day. Confirmed on two separate physical machines, ruling out one bad host.
 
-Fix identified but not yet re-tested: pin `axolotl==0.18.0` (the version from the successful run's
-install log) instead of `pip install -U axolotl`. See `training/README.md`.
+Update: pinning `axolotl==0.18.0` (the version from the successful runs' install log) was tried
+and did **not** fix it — the same error recurred on yet another host with that exact pinned
+version. Six total attempts across six different rented hosts: 2 succeeded (same host, reused via
+image caching), 4 failed the same way on 4 different hosts. See `training/README.md` for the full
+detail — this looks like real driver-version heterogeneity across the GPU fleet rather than a
+software version issue this repo can fix from inside the container.
 
 ## Next step
 
-Re-run the LoRA-adapted eval with the pinned axolotl version, using the same 10 held-out tasks
-(reset the scratch files between runs — they get modified in place) so the comparison is
-apples-to-apples with the base model's 8/10.
+Re-run the LoRA-adapted eval once a reliable way to land on (or request) a host with an adequate
+driver is found — or investigate whether axolotl exposes a way to disable the specific fused LoRA
+kernel optimization that's failing, since the main model load's own CUDA init succeeds fine on the
+same failing hosts. Use the same 10 held-out tasks (reset the scratch files between runs — they
+get modified in place) so the comparison stays apples-to-apples with the base model's 8/10.

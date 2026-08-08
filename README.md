@@ -134,13 +134,13 @@ credentials in its environment.
 4. **Eval** (half done) — benchmark the fine-tuned model's tool-use behavior against the base
    model on a held-out task set of 10 tasks in fresh domains never seen in training. **Base model
    result: 8/10 (80%)**, consistent with the established 55-85% band. **LoRA-adapted result:
-   blocked** — serving the base model + adapter via vLLM's `--enable-lora` hit three real
-   environment issues in the same shared install (a `flash_attn` ABI break, a conflicting
-   `libcudnn` version, and — after isolating vLLM into its own venv fixed both of those — a
-   version-drift issue where `pip install -U axolotl` started pulling a newer torch requiring a
-   CUDA driver newer than what two different rented hosts had, even though the identical command
-   had trained successfully hours earlier). See `training/README.md` for the pinned-version fix
-   (`axolotl==0.18.0`) — not yet re-attempted with the fix in place.
+   blocked** — serving base model + adapter via vLLM's `--enable-lora` hit a `flash_attn` ABI
+   break and a conflicting `libcudnn` version (both fixed by isolating vLLM into its own venv),
+   then a `RuntimeError: NVIDIA driver too old` that persisted even with axolotl version-pinned to
+   the exact version that had trained successfully hours earlier — six attempts across six
+   different rented hosts, two succeeded (same host, reused) and five failed the same way on five
+   different hosts. Current best explanation: driver-version heterogeneity across the GPU fleet,
+   not something fixable from inside the container. See `training/README.md`.
 5. **Release** (not started) — publish the LoRA adapter (and merged weights, if licensing allows)
    on Hugging Face. Needs a Hugging Face account/token — not yet configured for this project.
 

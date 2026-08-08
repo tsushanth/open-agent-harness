@@ -23,14 +23,20 @@ image — note that image does *not* actually ship axolotl pre-installed despite
 On that setup, install + tokenize + 3-epoch train over 45 examples took about 8 minutes total,
 with the training loop itself finishing in under 3.
 
-**Pin the axolotl version — do not use `pip install -U axolotl`.** Two runs on the same day, same
-commands, same `winglian/axolotl:main-latest` image: the first two (`axolotl==0.18.0`, installed
-via `-U` when that happened to be latest) trained successfully. A later `-U` install pulled a
-newer axolotl whose torch dependency required a newer CUDA driver than was available — training
-failed with `RuntimeError: The NVIDIA driver on your system is too old (found version 12080)` on
-**two different physical hosts**, ruling out one bad machine. `-U` in a Docker image whose base
-CUDA/driver stack is fixed is asking for exactly this kind of drift. `axolotl==0.18.0` is the
-pinned-known-good version from the successful run's install log.
+**Known issue: `RuntimeError: The NVIDIA driver on your system is too old (found version 12080)`
+on some rented hosts, not a version-pinning problem.** Two runs succeeded on the same physical
+host (`ew9us8zzyss3` in RunPod's terms) using `pip install -U axolotl`. Five subsequent attempts
+on five *different* hosts all failed with this same error — including one run using
+`axolotl==0.18.0` pinned to the exact version from the successful runs' install log, ruling out
+version drift as the cause. The failure happens specifically inside axolotl's custom fused LoRA
+kernel (`axolotl.monkeypatch.lora_kernels`), which does its own lazy CUDA re-init separate from
+the main model load — and that re-init fails even on hosts where the main model load (which also
+touches CUDA) just succeeded moments earlier. Best current explanation: driver-version
+heterogeneity across RunPod's fleet for this GPU class, not something a `pip install` pin fixes
+from inside the container. If you hit this, the workaround that's known to work is landing on a
+host with an adequate driver (no reliable way found yet to request one specifically) — or
+disabling axolotl's fused LoRA kernel optimization if it exposes a config flag to do so (not yet
+investigated).
 
 `prepare_dataset.py` drops sessions that didn't reach `outcome: "completed"` and sessions
 containing a known bad pattern (the model echoing prompt instructions back — see
