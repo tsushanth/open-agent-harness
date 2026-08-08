@@ -1,0 +1,48 @@
+{
+  "base": {
+    "label": "base",
+    "passed": null,
+    "total": 8,
+    "results": [],
+    "skipped": true
+  },
+  "lora": {
+    "label": "lora",
+    "passed": 3,
+    "total": 8,
+    "results": [
+      {
+        "task": "is_valid_age in e1_bug_wrongcompare.py should also accept ag",
+        "outcome": "completed_verified_pass"
+      },
+      {
+        "task": "get_last_two in e2_bug_index.py has a bug \u2014 it returns the l",
+        "outcome": "completed_verified_fail"
+      },
+      {
+        "task": "product_of_list in e3_bug_accumulator.py always returns 0 be",
+        "outcome": "completed_verified_fail"
+      },
+      {
+        "task": "contains_word in e4_bug_stringcase.py should be case-insensi",
+        "outcome": "completed_verified_fail"
+      },
+      {
+        "task": "The Counter class in e5_bug_default_state.py uses a class-le",
+        "outcome": "completed_no_tools_used_verified_fail"
+      },
+      {
+        "task": "describe_temp in e6_refactor_repeat.py repeats the same f-st",
+        "outcome": "completed_verified_pass"
+      },
+      {
+        "task": "can_checkout in e7_refactor_condition.py has needlessly nest",
+        "outcome": "completed_verified_pass"
+      },
+      {
+        "task": "Downloader.__init__ in e8_multistep_cache.py hardcodes retri",
+        "outcome": "completed_no_tools_used_verified_fail"
+      }
+    ]
+  }
+}

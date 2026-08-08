@@ -132,22 +132,27 @@ credentials in its environment.
    4 hosts afterward. See `training/README.md`. The adapter isn't committed to this repo (154MB
    exceeds GitHub's 100MB limit without LFS, and model weights belong in a model registry, not a
    git repo) — reproduce it with the command there, or wait for the Release step below.
-4. **Eval** (done — clear negative result, root cause hypothesized) — benchmark the fine-tuned
-   model against base on two held-out sets: Set A (10 "add a function" tasks) and Set B (8 bug-fix/
-   refactor tasks, added specifically to test whether corpus diversification helped). **Every
-   trained checkpoint underperforms base on every eval set tried:** Set A run 1 (45 examples)
-   base 8/10 vs. LoRA 6/10; Set A run 2 (51 examples) base 7/10 vs. LoRA 6/10 (identical pattern to
-   run 1); **Set B (51 examples) base 6/8 vs. LoRA 3/8 — the biggest gap yet, on the exact task
-   shape the new training data targeted.** That last result is the key finding: it rules out "the
-   corpus is too narrow" as the root cause (Set B's training examples directly targeted
-   bug-fixing, and LoRA still regressed on bug-fixing) in favor of **the training recipe itself
-   being too aggressive for 51 examples** (3 epochs, `learning_rate: 2e-4`) — a catastrophic-
-   forgetting signature, not a data-diversity problem. See `eval/README.md` for full detail and
-   next steps (tune the recipe down before adding more data). Getting *any* working comparison
-   took 10 failed pod attempts trying to serve the adapter via vLLM before abandoning that entirely
-   for [`harness/core/local_model_client.py`](harness/core/local_model_client.py) — a
-   `transformers`+`peft` backend that runs in-process, no serving layer, now a real reusable part
-   of the harness (drop-in `ModelClient` replacement, tested, used successfully three times).
+4. **Eval** (done — negative result, narrowed to a specific cause) — benchmark the fine-tuned model
+   against base on two held-out sets: Set A (10 "add a function" tasks) and Set B (8 bug-fix/
+   refactor tasks, added to test whether corpus diversification helped). Every checkpoint so far
+   underperforms base on Set B specifically. The investigation had two stages:
+   - **Stage 1** (recipe hypothesis): Set A run 1 (45 ex) base 8/10 vs. LoRA 6/10; Set A run 2
+     (51 ex) base 7/10 vs. LoRA 6/10 (identical pattern); **Set B (51 ex) base 6/8 vs. LoRA
+     3/8 — the biggest gap, on the exact task shape the new training data targeted.** Ruled out
+     "corpus too narrow" (Set B's examples directly targeted bug-fixing) in favor of "training
+     recipe too aggressive" (3 epochs, `learning_rate: 2e-4` — a catastrophic-forgetting shape).
+   - **Stage 2** (tested that hypothesis): trained a "gentle" variant (1 epoch, `5e-5`,
+     `qwen2.5-coder-7b-lora-gentle.yaml`) and re-ran both sets. **Set A recovered to 7/10 (near
+     base), but Set B stayed exactly 3/8 with the identical failure pattern.** So the recipe
+     hypothesis was only half right — over-aggressive training explains Set A's regression but not
+     Set B's, which needs a different fix (more bug-fix training volume, or a bad example in the
+     current 6 — see `eval/README.md` for the full write-up and next steps).
+
+   Getting *any* working comparison took 10 failed pod attempts trying to serve the adapter via
+   vLLM before abandoning that entirely for
+   [`harness/core/local_model_client.py`](harness/core/local_model_client.py) — a `transformers`+
+   `peft` backend that runs in-process, no serving layer, now a real reusable part of the harness
+   (drop-in `ModelClient` replacement, tested, used successfully across 4 eval runs).
 5. **Release** (not started, deliberately) — publish the LoRA adapter (and merged weights, if
    licensing allows) on Hugging Face. Needs a Hugging Face account/token — not yet configured.
    Every checkpoint trained so far underperforms the base model on both eval sets; publishing one
