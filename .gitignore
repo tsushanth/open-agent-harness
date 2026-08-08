@@ -9,3 +9,9 @@ data/trajectories/*.jsonl
 !data/trajectories/example-successful-run-2-cleaned-prompt.jsonl
 .env
 .DS_Store
+
+# Trained model weights don't belong in the git repo (154MB adapter exceeds GitHub's 100MB
+# per-file limit without LFS anyway) — see training/README.md for how to reproduce a run and
+# where the resulting adapter should be published (Hugging Face Hub, per the Release milestone).
+training/out/
+training/train.jsonl

@@ -122,13 +122,21 @@ credentials in its environment.
    55-85% band — the honest read is that's roughly the real ceiling for this
    harness/model/fix combination, with natural batch-to-batch variance, not a single fixed number.
    See [`batch-2026-08-08-d/README.md`](data/trajectories/batch-2026-08-08-d/README.md).
-3. **SFT** (config written, not yet run) — `training/qwen2.5-coder-7b-lora.yaml` is a ready QLoRA
-   config for Qwen2.5-Coder-7B-Instruct via axolotl, plus `training/prepare_dataset.py` to build
-   the training set from `data/trajectories/`. 45 examples — see `training/README.md`.
-4. **Eval** — benchmark the fine-tuned model's tool-use behavior against the base model on a held-out
-   task set (does it read before editing? does it stop when done? does it avoid unnecessary bash
-   calls?).
-5. **Release** — publish the LoRA adapter (and merged weights, if licensing allows) on Hugging Face.
+3. **SFT** (done — first real run) — trained `training/qwen2.5-coder-7b-lora.yaml`'s QLoRA config
+   against the 45-example corpus on a rented RTX A5000. Loss converged cleanly over 3 epochs
+   (0.11 → 0.036), producing a real 154MB LoRA adapter (40M trainable params, 0.53% of the 7.6B
+   total). Full pipeline validated end-to-end: dataset prep → axolotl install → tokenize → train →
+   save, all running unattended inside the training pod. The adapter isn't committed to this repo
+   (154MB exceeds GitHub's 100MB limit without LFS, and model weights belong in a model registry,
+   not a git repo) — reproduce it yourself with the command in `training/README.md`, or wait for
+   the Release step below. **Not yet evaluated** — a converged loss curve on 45 examples proves the
+   pipeline works, not that the resulting model is actually better at tool use; that's the next step.
+4. **Eval** (not started) — benchmark the fine-tuned model's tool-use behavior against the base
+   model on a held-out task set (does it read before editing? does it stop when done? does it
+   avoid unnecessary bash calls? does its pass rate on new, unseen tasks improve over the base
+   model's 55-85% band?).
+5. **Release** (not started) — publish the LoRA adapter (and merged weights, if licensing allows)
+   on Hugging Face. Needs a Hugging Face account/token — not yet configured for this project.
 
 ## Contributing
 

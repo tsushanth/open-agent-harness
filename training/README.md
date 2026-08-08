@@ -16,6 +16,12 @@ python3 training/prepare_dataset.py --input data/trajectories --output training/
 accelerate launch -m axolotl.cli.train training/qwen2.5-coder-7b-lora.yaml
 ```
 
+Validated on a rented RTX A5000 (24GB) using the official `winglian/axolotl:main-latest` Docker
+image — note that image does *not* actually ship axolotl pre-installed despite the name (its
+`/workspace/axolotl` is an empty mount point); run `pip install -U axolotl` inside it first, same
+as step 3 above. On that setup, install + tokenize + 3-epoch train over 45 examples took about
+8 minutes total, with the training loop itself finishing in under 3.
+
 `prepare_dataset.py` drops sessions that didn't reach `outcome: "completed"` and sessions
 containing a known bad pattern (the model echoing prompt instructions back — see
 `harness/core/agent.py` history for why that check exists). Both are real failure modes
@@ -31,12 +37,24 @@ them** — or write task-specific verification (e.g. "does the file actually com
 session ends") before trusting `outcome: "completed"` at scale. This is exactly the gap the
 Eval milestone in the root README needs to close.
 
-## Status: not yet run
+## Status: first training run complete, not yet evaluated
+
+Trained on the 45-example corpus below. Loss converged cleanly over 3 epochs (17 steps):
+0.11 → 0.036, no divergence, no NaNs (adapter weights independently verified after download).
+Produced a 154MB LoRA adapter (`peft_type: LORA`, r=16, 40.4M trainable params — 0.53% of the
+7.66B total). **This proves the pipeline works end-to-end, not that the resulting model is
+better at tool use than the base model** — 45 examples is small, and nothing has evaluated
+whether it generalizes versus partially memorizing the training set. That comparison is the
+Eval milestone, not yet done.
+
+The trained adapter isn't committed to this repo — 154MB exceeds GitHub's 100MB per-file limit
+without LFS, and model weights belong in a model registry (Hugging Face Hub), not a git repo, per
+the Release milestone. Reproduce it yourself with the pipeline commands above, or wait for a
+published checkpoint.
 
 We have 84 real trajectories in `data/trajectories/` (2 loose examples + seven batches of 4, 10,
-14, 16, 14, 12, and 12), 45 of which pass `prepare_dataset.py`'s filter — a plausible corpus size
-for a first (small, likely still overfitting-prone) training run. The config above is still
-unvalidated against a real training run, though.
+14, 16, 14, 12, and 12), 45 of which pass `prepare_dataset.py`'s filter and were used for the run
+above.
 
 Pass rate by batch: 25% (a) → 20% (b) → 64% (c) → 69% (d) → 36% (e) → 83% (f) → 58% (g). The jump
 at c/d came from fixing the dominant `completed_no_tools_used` failure mode and a real
