@@ -34,17 +34,37 @@ back in). That install hit three real environment conflicts in sequence:
    different rented hosts had, even though the exact same command had trained successfully earlier
    the same day. Confirmed on two separate physical machines, ruling out one bad host.
 
-Update: pinning `axolotl==0.18.0` (the version from the successful runs' install log) was tried
-and did **not** fix it — the same error recurred on yet another host with that exact pinned
-version. Six total attempts across six different rented hosts: 2 succeeded (same host, reused via
-image caching), 4 failed the same way on 4 different hosts. See `training/README.md` for the full
-detail — this looks like real driver-version heterogeneity across the GPU fleet rather than a
-software version issue this repo can fix from inside the container.
+Update: pinning `axolotl==0.18.0` did **not** fix it — same error, yet another host. Root cause
+found by grepping axolotl's source for the actual config flags (`lora_mlp_kernel`,
+`lora_qkv_kernel`, `lora_o_kernel`, `lora_embedding_kernel` — axolotl auto-enables a fused CUDA
+kernel optimization for QLoRA unless told not to; its own lazy re-init, separate from the main
+model load, was what crashed). **Disabling these in `training/qwen2.5-coder-7b-lora.yaml` fixed
+training** — confirmed on 2 more hosts after the fix, both trained successfully (vs. 4/4 failures
+before it). This is real, verified progress; see `training/README.md`.
+
+Serving the resulting adapter for a live eval comparison hit a *different* wall after that: every
+attempt at running vLLM with `--enable-lora` alongside the adapter — installing vLLM fresh in the
+training pod (multiple dependency conflicts), via a RunPod Network Volume shared between a
+training pod and a second pod using the already-proven `vllm/vllm-openai` image (the image's fixed
+entrypoint can't run arbitrary shell, and attaching a network volume to it caused an immediate,
+silent crash-loop even with plain non-LoRA args — sanity-checked and confirmed), and finally
+installing an older pinned vLLM (`0.7.3`) inside the axolotl image again — all failed differently.
+The last attempt got furthest (model loading started) before dying silently with no traceback
+(pod uptime resets each time — consistent with an OOM-kill, not confirmed).
+
+**Total for this specific sub-problem: 10 pod attempts, 4 distinct root causes found and fixed
+along the way** (flash_attn ABI break, libcudnn conflict, fused-kernel CUDA crash — this one fully
+resolved — and now this serving-specific crash, unresolved). Stopped here rather than continuing
+to debug blind with no logs on the failing image.
 
 ## Next step
 
-Re-run the LoRA-adapted eval once a reliable way to land on (or request) a host with an adequate
-driver is found — or investigate whether axolotl exposes a way to disable the specific fused LoRA
-kernel optimization that's failing, since the main model load's own CUDA init succeeds fine on the
-same failing hosts. Use the same 10 held-out tasks (reset the scratch files between runs — they
-get modified in place) so the comparison stays apples-to-apples with the base model's 8/10.
+The training pipeline fix is solid and should be trusted going forward. The live LoRA-vs-base eval
+comparison needs a fundamentally different approach rather than more ad hoc pod debugging —
+candidates: (a) build a custom Docker image with axolotl + a compatible vLLM pre-installed and
+tested once, rather than fresh `pip install`s per pod; (b) get proper log access on whatever image
+serves the LoRA adapter (the `vllm/vllm-openai` image's fixed entrypoint blocks this); (c) skip
+vLLM's `--enable-lora` entirely and eval via plain `transformers` + `peft` generation instead,
+which is slower per-request but far simpler to get working and debug. Use the same 10 held-out
+tasks (reset the scratch files between runs) so any future comparison stays apples-to-apples with
+the base model's 8/10.

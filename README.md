@@ -122,25 +122,25 @@ credentials in its environment.
    55-85% band — the honest read is that's roughly the real ceiling for this
    harness/model/fix combination, with natural batch-to-batch variance, not a single fixed number.
    See [`batch-2026-08-08-d/README.md`](data/trajectories/batch-2026-08-08-d/README.md).
-3. **SFT** (done — first real run) — trained `training/qwen2.5-coder-7b-lora.yaml`'s QLoRA config
-   against the 45-example corpus on a rented RTX A5000. Loss converged cleanly over 3 epochs
-   (0.11 → 0.036), producing a real 154MB LoRA adapter (40M trainable params, 0.53% of the 7.6B
-   total). Full pipeline validated end-to-end: dataset prep → axolotl install → tokenize → train →
-   save, all running unattended inside the training pod. The adapter isn't committed to this repo
-   (154MB exceeds GitHub's 100MB limit without LFS, and model weights belong in a model registry,
-   not a git repo) — reproduce it yourself with the command in `training/README.md`, or wait for
-   the Release step below. **Not yet evaluated** — a converged loss curve on 45 examples proves the
-   pipeline works, not that the resulting model is actually better at tool use; that's the next step.
-4. **Eval** (half done) — benchmark the fine-tuned model's tool-use behavior against the base
-   model on a held-out task set of 10 tasks in fresh domains never seen in training. **Base model
-   result: 8/10 (80%)**, consistent with the established 55-85% band. **LoRA-adapted result:
-   blocked** — serving base model + adapter via vLLM's `--enable-lora` hit a `flash_attn` ABI
-   break and a conflicting `libcudnn` version (both fixed by isolating vLLM into its own venv),
-   then a `RuntimeError: NVIDIA driver too old` that persisted even with axolotl version-pinned to
-   the exact version that had trained successfully hours earlier — six attempts across six
-   different rented hosts, two succeeded (same host, reused) and five failed the same way on five
-   different hosts. Current best explanation: driver-version heterogeneity across the GPU fleet,
-   not something fixable from inside the container. See `training/README.md`.
+3. **SFT** (done, reliable) — trained `training/qwen2.5-coder-7b-lora.yaml`'s QLoRA config against
+   the 45-example corpus. Loss converges cleanly over 3 epochs (~0.11 → ~0.04-0.06 across runs),
+   producing a real 154MB LoRA adapter (40M trainable params, 0.53% of the 7.6B total). Hit and
+   fixed a real training-time bug along the way: axolotl auto-enables a fused CUDA kernel
+   optimization that crashed with a misleading "NVIDIA driver too old" error on 4 of 6 rented
+   hosts — root-caused to specific config flags and disabled in the config, confirmed fixed on 2
+   more hosts afterward. See `training/README.md`. The adapter isn't committed to this repo (154MB
+   exceeds GitHub's 100MB limit without LFS, and model weights belong in a model registry, not a
+   git repo) — reproduce it with the command there, or wait for the Release step below.
+4. **Eval** (half done, blocked on a different issue) — benchmark the fine-tuned model against the
+   base model on a held-out task set of 10 tasks in fresh domains never seen in training. **Base
+   model result: 8/10 (80%)**, consistent with the established 55-85% band. **LoRA-adapted result:
+   blocked** — not by the training issue above (that's resolved), but by a separate problem getting
+   vLLM to *serve* the trained adapter for live comparison: three different serving approaches (raw
+   `pip install vllm` in the training pod, a shared RunPod Network Volume with the proven
+   `vllm/vllm-openai` image, an older pinned vLLM version) each hit a different failure with no
+   clean fix found. 10 pod attempts total for this specific sub-problem. See `eval/README.md` for
+   the full detail and recommended next approaches (a custom pre-built Docker image, or evaluating
+   via plain `transformers`+`peft` instead of vLLM).
 5. **Release** (not started) — publish the LoRA adapter (and merged weights, if licensing allows)
    on Hugging Face. Needs a Hugging Face account/token — not yet configured for this project.
 

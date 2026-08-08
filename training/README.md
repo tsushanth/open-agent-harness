@@ -12,31 +12,28 @@ oah "some real coding task"
 # 2. Convert completed, clean sessions into a training set
 python3 training/prepare_dataset.py --input data/trajectories --output training/train.jsonl
 
-# 3. Fine-tune with axolotl — PIN the version, don't use -U (see warning below)
-pip install axolotl==0.18.0
+# 3. Fine-tune with axolotl
+pip install -U axolotl
 accelerate launch -m axolotl.cli.train training/qwen2.5-coder-7b-lora.yaml
 ```
 
-Validated on a rented RTX A5000 (24GB) using the official `winglian/axolotl:main-latest` Docker
-image — note that image does *not* actually ship axolotl pre-installed despite the name (its
-`/workspace/axolotl` is an empty mount point); install it yourself first, same as step 3 above.
-On that setup, install + tokenize + 3-epoch train over 45 examples took about 8 minutes total,
-with the training loop itself finishing in under 3.
+Validated on rented RTX A5000/RTX 4090 GPUs (24GB) using the official `winglian/axolotl:main-latest`
+Docker image — note that image does *not* actually ship axolotl pre-installed despite the name
+(its `/workspace/axolotl` is an empty mount point); install it yourself first, same as step 3
+above. Install + tokenize + 3-epoch train over 45 examples takes 3-8 minutes depending on host.
 
-**Known issue: `RuntimeError: The NVIDIA driver on your system is too old (found version 12080)`
-on some rented hosts, not a version-pinning problem.** Two runs succeeded on the same physical
-host (`ew9us8zzyss3` in RunPod's terms) using `pip install -U axolotl`. Five subsequent attempts
-on five *different* hosts all failed with this same error — including one run using
-`axolotl==0.18.0` pinned to the exact version from the successful runs' install log, ruling out
-version drift as the cause. The failure happens specifically inside axolotl's custom fused LoRA
-kernel (`axolotl.monkeypatch.lora_kernels`), which does its own lazy CUDA re-init separate from
-the main model load — and that re-init fails even on hosts where the main model load (which also
-touches CUDA) just succeeded moments earlier. Best current explanation: driver-version
-heterogeneity across RunPod's fleet for this GPU class, not something a `pip install` pin fixes
-from inside the container. If you hit this, the workaround that's known to work is landing on a
-host with an adequate driver (no reliable way found yet to request one specifically) — or
-disabling axolotl's fused LoRA kernel optimization if it exposes a config flag to do so (not yet
-investigated).
+**Resolved: `RuntimeError: The NVIDIA driver on your system is too old`.** Hit this on 4 of 6
+rented hosts before root-causing it. Not a version-pinning problem — pinning `axolotl==0.18.0` to
+the exact version from a successful run did **not** fix it on a new host, ruling out version
+drift. The actual cause: axolotl auto-enables a fused CUDA kernel optimization for QLoRA
+(`lora_mlp_kernel`, `lora_qkv_kernel`, `lora_o_kernel`, `lora_embedding_kernel`, all default-`true`
+via `axolotl.monkeypatch.lora_kernels`) unless told not to. That kernel's own lazy CUDA re-init —
+separate from the main model load's, which succeeded fine on the same failing hosts — is what
+crashed. **`training/qwen2.5-coder-7b-lora.yaml` now sets all four flags to `false`**, found by
+grepping axolotl's source (`axolotl/utils/schemas/config.py`, `axolotl/loaders/patch_manager.py`)
+in a cheap CPU-only diagnostic pod rather than guessing. Confirmed fixed: trained successfully on
+2 more hosts after adding the flags, vs. 4/4 failures on different hosts before. Costs a small
+amount of training speed; worth it for actually working across the GPU fleet.
 
 `prepare_dataset.py` drops sessions that didn't reach `outcome: "completed"` and sessions
 containing a known bad pattern (the model echoing prompt instructions back — see
