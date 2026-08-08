@@ -115,15 +115,22 @@ credentials in its environment.
    working end-to-end against a real Qwen2.5-Coder-7B-Instruct endpoint (see Status above).
 2. **Trajectory collection** (in progress) — generate a corpus of tool-call trajectories: either
    distilled from a stronger teacher model solving real coding tasks with this harness, or
-   collected from your own usage. So far: 93 real sessions across 8 batches + 2 loose examples,
-   48 of which pass `prepare_dataset.py`'s filter. Pass rate by batch: 25% (a) → 20% (b) → 64% (c)
-   → 69% (d) → 36% (e, confounded by shared-file batch design) → 83% (f) → 58% (g) → 36% (h,
-   corrected — see below). Batches a-g were almost entirely "add a function/method to a file";
-   batch h deliberately shifted to bug fixes, refactors, and multi-step tasks. 2 of batch h's
-   originally-counted 6 passes turned out to be corrupted (see Eval below) and were removed — the
-   corpus and `prepare_dataset.py` are both now more conservative because of it, including a new
-   safeguard that drops any session over 20 messages by default. See
-   [`batch-2026-08-08-e/README.md`](data/trajectories/batch-2026-08-08-e/README.md).
+   collected from your own usage. So far: 97 real sessions across 9 batches + 2 loose examples,
+   52 of which pass `prepare_dataset.py`'s filter. Pass rate by batch: 25% (a) → 20% (b) → 64% (c)
+   → 69% (d) → 36% (e, confounded by shared-file batch design) → 83% (f, "add a function") → 58%
+   (g) → 36% (h, corrected — see below) → 27% (f/"batch-2026-08-08-f", corrected — see below, note
+   this is a second, later batch that happens to reuse the letter f as a directory suffix; not the
+   same as the earlier 83% batch). Batches a-g were almost entirely "add a function/method to a
+   file"; batches h and the newer f (2026-08-08) both deliberately targeted bug fixes, refactors,
+   and multi-step tasks, specifically to grow this underrepresented shape per the Eval findings
+   below. Both needed post-hoc corruption fixes: batch h had 2 of 6 apparent passes turn out to be
+   corrupted (a repetition loop, a never-actually-edited file that passed a behavioral-only
+   verify); the newer batch had 1 of 5 apparent passes turn out to be a false positive (the
+   original buggy code happened to satisfy the specific test input used). See
+   [`batch-2026-08-08-e/README.md`](data/trajectories/batch-2026-08-08-e/README.md) and
+   [`batch-2026-08-08-f/README.md`](data/trajectories/batch-2026-08-08-f/README.md) — combined,
+   the corpus now has 8 clean bug-fix/refactor examples (4 + 4), still short of the 20-30+ target
+   `eval/README.md` called for.
 3. **SFT** (done, reliable) — trained `training/qwen2.5-coder-7b-lora.yaml`'s QLoRA config four
    times across two corpus versions and two recipes. Loss converges cleanly every time, producing
    a real ~154MB LoRA adapter (40M trainable params, 0.53% of the 7.6B total). Hit and fixed a real

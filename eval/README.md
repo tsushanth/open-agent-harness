@@ -75,6 +75,14 @@ second pod — training and eval ran back-to-back inside one pod. Much slower pe
 
 ## Next steps
 
+**Update (2026-08-08):** ran a follow-up trajectory batch (`data/trajectories/batch-2026-08-08-f/`)
+specifically to grow bug-fix/refactor volume per point 2 below. 15 new tasks, only 4 survived
+review as genuinely clean (1 more looked like a pass but was a false positive — original buggy
+code coincidentally satisfied the specific test input; all 4 refactor tasks failed outright,
+caught by the stricter structural verify checks added after batch h's lesson). Corpus-wide clean
+bug-fix/refactor count is now 8 (4 from batch h + 4 new), still well short of the 20-30+ target
+below — not yet worth re-running the isolation-test retrain/eval comparison. More batches needed.
+
 The isolation test resolved the "what's the actual lever" question. What's left is acting on it:
 
 1. **The current best checkpoint (44 examples, no bug-fix/refactor data, gentle recipe) is the
