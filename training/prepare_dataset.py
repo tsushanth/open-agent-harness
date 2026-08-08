@@ -17,9 +17,19 @@ This script:
      the task was actually accomplished; use --strict to require verification instead).
   2. Drops "completed_no_tools_used" always — training on those would teach the model that
      describing a change is the same as making one.
-  3. Strips the literal "repeat these instructions" failure pattern if it slipped through
+  3. Drops sessions with an abnormally high message count (default: >20). Found the hard way:
+     2 of 6 "completed_verified_pass" sessions in one batch were actually degenerate repetition
+     loops — one that fixed the bug in message 4 then spent 75 more messages re-proposing the
+     same already-applied edit against hallucinated stale file content, and one that never
+     successfully edited the file at all across 51 messages but still passed verify because a
+     behavioral-only verify command couldn't distinguish "refactored" from "left untouched but
+     already worked." Both trained the model on "loop indefinitely, never conclude," and are
+     the most likely root cause of a real eval regression traced to exactly this training batch
+     — see eval/README.md. Every clean session in this corpus is 5-11 messages; this is real
+     signal, not an arbitrary cutoff.
+  4. Strips the literal "repeat these instructions" failure pattern if it slipped through
      (defense in depth alongside the system-prompt fix in harness/core/agent.py).
-  4. Writes a single JSONL file of {"messages": [...]} records, one per session, ready for
+  5. Writes a single JSONL file of {"messages": [...]} records, one per session, ready for
      axolotl/trl's standard chat-format SFT loader.
 
 Usage:
@@ -35,6 +45,8 @@ BAD_ECHO_MARKERS = (
     "EXACTLY one block of this form",
     "nothing else in that turn",
 )
+
+MAX_MESSAGE_COUNT = 20
 
 
 def is_clean(messages: list[dict]) -> bool:
@@ -78,6 +90,9 @@ def main() -> None:
                 dropped += 1
                 continue
             if not is_clean(record["messages"]):
+                dropped += 1
+                continue
+            if len(record["messages"]) > MAX_MESSAGE_COUNT:
                 dropped += 1
                 continue
 
