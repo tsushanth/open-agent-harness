@@ -1,43 +1,44 @@
 # Eval
 
-Held-out evaluation: 10 tasks in fresh domains never seen in `data/trajectories/`'s training
-batches (sphere/cylinder volume, warehouse shipping, string case conversion, bracket nesting
-depth, leaderboard, unit conversion, task priority queue, hex color normalization, matrix max,
-decreasing streaks) — one task per file, matching the methodology that produced the cleanest
-signal during trajectory collection (see `data/trajectories/batch-2026-08-08-c/README.md`).
+Two held-out eval sets, both in fresh domains never seen in `data/trajectories/`'s training
+batches:
+- **Set A** (10 tasks, "add a function" shape): sphere/cylinder volume, warehouse shipping, string
+  case conversion, bracket nesting depth, leaderboard, unit conversion, task priority queue, hex
+  color normalization, matrix max, decreasing streaks.
+- **Set B** (8 tasks, bug-fix/refactor shape, added to actually test whether corpus
+  diversification helped): 5 bug fixes (wrong comparison, index error, accumulator init, string
+  case sensitivity, class-vs-instance state), 2 refactors (repeated code, nested conditionals),
+  1 multi-step task (use an existing constant instead of a hardcoded value).
 
 ## Result
 
-Ran twice: once against the 45-example corpus (almost entirely "add a function to a file"), once
-after adding 6 deliberately different tasks (bug fixes, refactors, multi-step) for a 51-example
-corpus (see `data/trajectories/batch-2026-08-08-e/README.md`).
+| Model | Set A, run 1 (45 examples) | Set A, run 2 (51 examples) | Set B (51 examples) |
+|---|---|---|---|
+| Base | 8/10 (80%) | 7/10 (70%) | 6/8 (75%) |
+| Base + LoRA | 6/10 (60%) | 6/10 (60%) | **3/8 (37.5%)** |
 
-| Model | Run 1 (45 examples) | Run 2 (51 examples, +diverse tasks) |
-|---|---|---|
-| Base (Qwen2.5-Coder-7B-Instruct) | 8/10 (80%) | 7/10 (70%) |
-| Base + LoRA adapter | 6/10 (60%) | 6/10 (60%) — **identical task-by-task pattern to run 1** |
+Full per-task breakdowns: [`lora-vs-base-2026-08-08.json`](lora-vs-base-2026-08-08.json) (Set A
+run 1), [`lora-vs-base-2026-08-08-retrain.json`](lora-vs-base-2026-08-08-retrain.json) (Set A run
+2), [`bugfix-refactor-lora-vs-base-2026-08-08.json`](bugfix-refactor-lora-vs-base-2026-08-08.json)
+(Set B).
 
-Full per-task breakdown: [`lora-vs-base-2026-08-08.json`](lora-vs-base-2026-08-08.json) (run 1),
-[`lora-vs-base-2026-08-08-retrain.json`](lora-vs-base-2026-08-08-retrain.json) (run 2).
+**The clearest finding of this whole project: at this corpus size, SFT makes the model worse, and
+Set B shows it's not narrowly confined to one task shape.** Set A run 1 looked like narrow
+overfitting (LoRA traded "sometimes skips the tool call" for "sometimes calls the tool but gets
+the wrong answer," net worse). Set B — bug fixes and refactors, the exact task shape batch h's new
+training examples targeted — shows the **same failure signature but bigger**: LoRA got both
+refactor tasks right (matching base) and 1 of 5 bug fixes right, but newly failed 3 straightforward
+bug fixes (wrong index, wrong accumulator init, case-sensitivity) that base solved correctly. Same
+pattern as Set A: LoRA's failures are all "called a tool, got it wrong," never "skipped the tool."
 
-**Run 1: the fine-tune performed worse than the base model, in a specific, non-random pattern.**
-The one task base failed via `completed_no_tools_used` (printed code as prose instead of calling
-a tool — `cylinder_volume`), LoRA fixed — exactly what the training corpus targeted. But LoRA
-newly failed 3 tasks base passed (`ship`, `top_player`, `km_to_miles`), always by calling a tool
-and getting the wrong result, never by skipping it. Read together: the fine-tune learned "always
-attempt a tool call" from a corpus that was almost entirely that one task shape, at some cost to
-correctness elsewhere — a plausible small/narrow-dataset overfitting signature.
-
-**Run 2, after adding task-shape diversity: no change on this eval set.** Base's score moved (8→7,
-model sampling variance at temperature>0, not a real change — this eval set isn't held perfectly
-fixed run to run in terms of model behavior). LoRA's score and *exact task-by-task pattern* were
-identical to run 1. This makes sense in hindsight rather than being a null result: **the 6 new
-training examples were bug-fixes/refactors, and this held-out eval set is entirely "add a
-function" tasks** — there was no reason to expect the new examples to move the needle on a
-benchmark that doesn't test what they taught. The eval set itself needs its own diversity (bug-fix
-and refactor held-out tasks) to actually test whether the corpus diversification helped — that
-wasn't built this round. Don't read run 2 as "diversifying the corpus didn't help"; read it as
-"this specific eval doesn't measure what changed."
+Read together across both sets: this isn't "the corpus is too narrow" (Set B's training examples
+directly targeted bug-fixing, and it still regressed on bug-fixing). It's more likely **the
+training recipe itself** — 51 examples, 3 epochs, `learning_rate: 2e-4` — is too aggressive for
+this little data, causing broad degradation of precise code-editing correctness (a catastrophic-
+forgetting signature) rather than teaching durable skill. Adding 6 more diverse examples on top of
+an already-too-strong training signal didn't fix that; it likely needed to be counteracted with
+fewer epochs, a lower learning rate, or simply far more data before the signal-to-noise ratio
+favors learning over forgetting.
 
 ## How this was actually run
 
@@ -64,16 +65,21 @@ second pod — training and eval ran back-to-back inside one pod. Much slower pe
 
 ## Next steps
 
-- **Build a second held-out eval set that includes bug-fix and refactor tasks**, not just
-  "add a function." The current 10-task set can only measure whether training changes affect
-  that one task shape — run 2 above is the direct lesson: it couldn't detect whether batch h's
-  diversification helped, because nothing in the eval set tests bug-fixing or refactoring.
-- **More trajectory volume across all task shapes**, not just more of the same. 51 examples is
-  still small for a 7B model; the corpus needs both more bug-fix/refactor examples specifically
-  (batch h was a first, 6-example start) and more raw volume generally.
-- Keep using `LocalModelClient` for future eval runs — proven twice now, no serving-layer
-  debugging needed either time.
-- If real serving throughput is needed later (e.g. evaluating on dozens of tasks quickly), revisit
-  vLLM with a custom pre-built Docker image (axolotl + a tested-compatible vLLM baked in once)
-  rather than fresh `pip install`s per pod — none of the three serving failures documented above
-  were reliably reproducible enough to trust a fresh install each time.
+Given Set B's result, the priority order changed from "collect more diverse data" to "fix the
+training recipe first, then decide if more data is even the bottleneck":
+
+1. **Tune down the training recipe before adding more data.** Try fewer epochs (1-2 instead of 3),
+   a lower `learning_rate` (e.g. `5e-5` instead of `2e-4`), or both, and re-run this same two-set
+   eval. If a gentler fine-tune stops regressing on Set B while still improving the
+   `completed_no_tools_used` behavior it was meant to fix, that confirms the recipe (not the data)
+   was the problem.
+2. Only after that — **more trajectory volume**, since 51 examples is genuinely small for a 7B
+   model regardless of recipe tuning.
+3. Keep using `LocalModelClient` for future eval runs — proven three times now (Set A twice, Set B
+   once), no serving-layer debugging needed any time.
+4. If real serving throughput is needed later (e.g. evaluating on dozens of tasks quickly), revisit
+   vLLM with a custom pre-built Docker image (axolotl + a tested-compatible vLLM baked in once)
+   rather than fresh `pip install`s per pod — none of the three serving failures documented above
+   were reliably reproducible enough to trust a fresh install each time.
+5. **Do not publish a checkpoint to Hugging Face (Release milestone) until a run beats base on
+   both eval sets.** Right now every trained checkpoint underperforms the base model.

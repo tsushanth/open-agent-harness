@@ -132,22 +132,26 @@ credentials in its environment.
    4 hosts afterward. See `training/README.md`. The adapter isn't committed to this repo (154MB
    exceeds GitHub's 100MB limit without LFS, and model weights belong in a model registry, not a
    git repo) — reproduce it with the command there, or wait for the Release step below.
-4. **Eval** (done, ongoing) — benchmark the fine-tuned model against the base model on a held-out
-   task set of 10 "add a function" tasks in fresh domains. Run 1 (45-example corpus): **base 8/10,
-   LoRA 6/10** — a specific, non-random regression (LoRA over-learned "always call a tool," at
-   some cost to correctness). Run 2 (51 examples, +6 diverse bug-fix/refactor tasks): **base 7/10
-   (sampling variance), LoRA 6/10 — identical task-by-task pattern to run 1.** Not a null result:
-   the eval set is entirely "add a function" tasks, so it can't detect whether the new bug-fix/
-   refactor training examples helped with bug-fixing or refactoring — that needs its own held-out
-   eval set, not yet built. See `eval/README.md` for full detail. Getting *any* working comparison
+4. **Eval** (done — clear negative result, root cause hypothesized) — benchmark the fine-tuned
+   model against base on two held-out sets: Set A (10 "add a function" tasks) and Set B (8 bug-fix/
+   refactor tasks, added specifically to test whether corpus diversification helped). **Every
+   trained checkpoint underperforms base on every eval set tried:** Set A run 1 (45 examples)
+   base 8/10 vs. LoRA 6/10; Set A run 2 (51 examples) base 7/10 vs. LoRA 6/10 (identical pattern to
+   run 1); **Set B (51 examples) base 6/8 vs. LoRA 3/8 — the biggest gap yet, on the exact task
+   shape the new training data targeted.** That last result is the key finding: it rules out "the
+   corpus is too narrow" as the root cause (Set B's training examples directly targeted
+   bug-fixing, and LoRA still regressed on bug-fixing) in favor of **the training recipe itself
+   being too aggressive for 51 examples** (3 epochs, `learning_rate: 2e-4`) — a catastrophic-
+   forgetting signature, not a data-diversity problem. See `eval/README.md` for full detail and
+   next steps (tune the recipe down before adding more data). Getting *any* working comparison
    took 10 failed pod attempts trying to serve the adapter via vLLM before abandoning that entirely
    for [`harness/core/local_model_client.py`](harness/core/local_model_client.py) — a
    `transformers`+`peft` backend that runs in-process, no serving layer, now a real reusable part
-   of the harness (drop-in `ModelClient` replacement, tested, used successfully twice).
-5. **Release** (not started) — publish the LoRA adapter (and merged weights, if licensing allows)
-   on Hugging Face. Needs a Hugging Face account/token — not yet configured for this project. Given
-   the eval result above, worth collecting more/broader trajectory data and re-training before
-   publishing a checkpoint that currently underperforms the base model on held-out tasks.
+   of the harness (drop-in `ModelClient` replacement, tested, used successfully three times).
+5. **Release** (not started, deliberately) — publish the LoRA adapter (and merged weights, if
+   licensing allows) on Hugging Face. Needs a Hugging Face account/token — not yet configured.
+   Every checkpoint trained so far underperforms the base model on both eval sets; publishing one
+   now would ship a regression. Blocked on fixing the training recipe (see Eval above) first.
 
 ## Contributing
 
