@@ -1,0 +1,72 @@
+# "Gentle" variant of qwen2.5-coder-7b-lora.yaml — same everything except num_epochs and
+# learning_rate, turned down to test the hypothesis in eval/README.md: the original recipe
+# (3 epochs, lr 2e-4) regressed the model on BOTH held-out eval sets, including one whose
+# training examples directly targeted the task shape being tested (Set B, bug fixes) — pointing
+# at the recipe being too aggressive for 51 examples (catastrophic forgetting), not at the data
+# being too narrow. If this variant stops regressing on Set B while keeping Set A's
+# completed_no_tools_used fix, that confirms the recipe was the problem.
+#
+# Run: python3 training/prepare_dataset.py first to produce training/train.jsonl,
+# then: accelerate launch -m axolotl.cli.train training/qwen2.5-coder-7b-lora-gentle.yaml
+#
+# Sized for a single 24GB GPU (RTX A5000/4090/3090) — the same class of pod used for
+# the harness smoke test. Bump micro_batch_size / drop load_in_4bit if running on
+# something bigger (A100 40GB+).
+
+base_model: Qwen/Qwen2.5-Coder-7B-Instruct
+model_type: AutoModelForCausalLM
+tokenizer_type: AutoTokenizer
+
+load_in_4bit: true
+adapter: qlora
+
+datasets:
+  - path: training/train.jsonl
+    type: chat_template
+    field_messages: messages
+
+chat_template: qwen_25  # matches Qwen2.5's native <|im_start|>/<|im_end|> + tool-call format
+
+sequence_len: 8192
+sample_packing: false  # trajectories vary a lot in length; packing risks cross-contaminating
+                        # tool-call context between unrelated sessions in the same pack
+
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+
+# Explicitly disabled: axolotl auto-enables these fused CUDA kernels for QLoRA setups unless
+# told not to. Their own lazy CUDA re-init (separate from the main model load's) crashed with
+# "NVIDIA driver too old" on 4 of 6 rented hosts tried, even though the main model load's own
+# CUDA init succeeded fine on the same hosts moments earlier — see eval/README.md. Disabling
+# trades a small amount of training speed for actually working across more of the GPU fleet.
+lora_mlp_kernel: false
+lora_qkv_kernel: false
+lora_o_kernel: false
+lora_embedding_kernel: false
+
+lora_target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+num_epochs: 1
+micro_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 5e-5
+lr_scheduler: cosine
+warmup_ratio: 0.03
+optimizer: paged_adamw_8bit
+
+bf16: auto
+gradient_checkpointing: true
+
+output_dir: ./training/out/qwen2.5-coder-7b-oah-lora-gentle
+
+logging_steps: 1
+save_strategy: epoch
+eval_strategy: "no"  # no held-out set yet — see Roadmap in the root README (Eval milestone)
