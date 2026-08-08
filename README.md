@@ -113,20 +113,22 @@ credentials in its environment.
 
 1. **Harness** (done, validated) — minimal tool set, agentic loop, trajectory logging. Confirmed
    working end-to-end against a real Qwen2.5-Coder-7B-Instruct endpoint (see Status above).
-2. **Trajectory collection** (next) — generate a corpus of tool-call trajectories: either distilled
-   from a stronger teacher model solving real coding tasks with this harness, or collected from
-   your own usage. So far: 16 real sessions across 3 batches, 4 of which pass `prepare_dataset.py`'s
-   filter. Real unassisted pass rate across the two verified batches: 3 of 14 (21%) — see
-   [`batch-2026-08-07/README.md`](data/trajectories/batch-2026-08-07/README.md) and
-   [`batch-2026-08-07-b/README.md`](data/trajectories/batch-2026-08-07-b/README.md) for per-task
-   breakdowns. The dominant failure mode in the larger batch (6 of 10) was the model answering
-   "add a function" by printing code as prose instead of calling `write_file`, despite an explicit
-   prompt instruction against it — a real, repeatable base-model behavior, not noise. Need
-   dozens-to-low-hundreds more across varied task types before a training run is worth it.
+2. **Trajectory collection** (in progress) — generate a corpus of tool-call trajectories: either
+   distilled from a stronger teacher model solving real coding tasks with this harness, or
+   collected from your own usage. So far: 30 real sessions across 3 batches + 2 loose examples,
+   13 of which pass `prepare_dataset.py`'s filter. Pass rate climbed batch over batch as real bugs
+   got fixed — 25% (batch a) → 20% (batch b) → **64% (batch c)**, after fixing the dominant
+   `completed_no_tools_used` failure mode (task-reminder text) and a real `edit_file` corruption
+   bug (empty `old_string` guard). See
+   [`batch-2026-08-07-c/README.md`](data/trajectories/batch-2026-08-07-c/README.md) for the latest
+   per-task breakdown — batch c's remaining failures no longer share one dominant pattern, which
+   may mean this is close to the base model's real ceiling on this harness without SFT. Still need
+   more volume (dozens more passing examples) before a training run has enough data to teach
+   general behavior rather than memorize 13 examples.
 3. **SFT** (config written, not run) — `training/qwen2.5-coder-7b-lora.yaml` is a ready QLoRA config
    for Qwen2.5-Coder-7B-Instruct via axolotl, plus `training/prepare_dataset.py` to build the
-   training set from `data/trajectories/`. Blocked on step 2 — see `training/README.md` for why
-   running it now would just overfit on almost no data.
+   training set from `data/trajectories/`. 13 examples is real progress but still likely too small
+   to avoid overfitting — see `training/README.md`.
 4. **Eval** — benchmark the fine-tuned model's tool-use behavior against the base model on a held-out
    task set (does it read before editing? does it stop when done? does it avoid unnecessary bash
    calls?).

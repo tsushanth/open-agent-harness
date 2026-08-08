@@ -33,19 +33,19 @@ Eval milestone in the root README needs to close.
 
 ## Status: not yet run
 
-We have 16 real trajectories in `data/trajectories/` (2 loose examples + two batches of 4 and 10),
-4 of which pass `prepare_dataset.py`'s filter — kept as reference / regression checks for the
-harness itself, not real training data yet. The config above is unvalidated against a real
-training run. **Do not run this yet** — with a training set this small, SFT would just badly
-overfit on almost nothing rather than teach general tool-use behavior. The next real milestone is
-trajectory collection at scale (dozens to low-hundreds of diverse tasks) before a training run is
-worth the GPU cost.
+We have 30 real trajectories in `data/trajectories/` (2 loose examples + three batches of 4, 10,
+and 14), 13 of which pass `prepare_dataset.py`'s filter. The config above is still unvalidated
+against a real training run. **Do not run this yet** — 13 examples is real progress from where
+this started but likely still too small to teach general tool-use behavior rather than memorize
+those 13 specific tasks. The next real milestone is more volume at the current (much higher)
+pass rate.
 
-Worth noting for whoever collects that larger corpus: the real pass rate observed so far (3/14,
-21%, across the two verified batches) means getting to "dozens of *passing* trajectories" likely
-requires running several times that many tasks, or improving the harness/prompt to reduce the
-dominant `completed_no_tools_used` failure mode documented in `batch-2026-08-07-b/README.md`
-first — otherwise most runs are wasted GPU time on failures the dataset filter throws away anyway.
+Pass rate by batch: 25% (a) → 20% (b) → **64% (c)**, after fixing the dominant
+`completed_no_tools_used` failure mode and a real `edit_file` corruption bug (both below). Batch
+c's remaining failures (truncated `write_file` content, a stale "already exists" claim, a
+read/search miss, one unverified refactor) no longer share one dominant pattern the way earlier
+batches did — worth watching whether that holds up over more tasks before assuming there's another
+big fix left to find.
 
 **Tried and reverted:** injecting a synthetic few-shot priming exchange (a worked "add a function"
 task resolved correctly via a tool call, placed between the system prompt and the real task) to
