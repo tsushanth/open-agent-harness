@@ -115,19 +115,16 @@ credentials in its environment.
    working end-to-end against a real Qwen2.5-Coder-7B-Instruct endpoint (see Status above).
 2. **Trajectory collection** (in progress) — generate a corpus of tool-call trajectories: either
    distilled from a stronger teacher model solving real coding tasks with this harness, or
-   collected from your own usage. So far: 72 real sessions across 6 batches + 2 loose examples,
-   38 of which pass `prepare_dataset.py`'s filter. Pass rate by batch: 25% (a) → 20% (b) →
-   64% (c) → 69% (d) → 36% (e, confounded by shared-file batch design — see below) →
-   **83% (f)**. Batch f (see
-   [`batch-2026-08-08-c/README.md`](data/trajectories/batch-2026-08-08-c/README.md)) tested one
-   task per distinct file with zero sharing, and got both the cleanest signal and the best result
-   yet — strong evidence that shared-file batch design (as in batch e) was actively suppressing
-   the real pass rate, not just confounding its measurement. One-task-per-file is now the default
-   for future batches.
-3. **SFT** (config written, not run) — `training/qwen2.5-coder-7b-lora.yaml` is a ready QLoRA config
-   for Qwen2.5-Coder-7B-Instruct via axolotl, plus `training/prepare_dataset.py` to build the
-   training set from `data/trajectories/`. 38 examples is the first corpus size in this project
-   that's a plausible candidate for an actual training run — see `training/README.md`.
+   collected from your own usage. So far: 84 real sessions across 7 batches + 2 loose examples,
+   45 of which pass `prepare_dataset.py`'s filter. Pass rate by batch: 25% (a) → 20% (b) → 64% (c)
+   → 69% (d) → 36% (e, confounded by shared-file batch design) → **83% (f)** → 58% (g). Batches f
+   and g both used strict one-task-per-file design (the fix for e's confound) and landed in a
+   55-85% band — the honest read is that's roughly the real ceiling for this
+   harness/model/fix combination, with natural batch-to-batch variance, not a single fixed number.
+   See [`batch-2026-08-08-d/README.md`](data/trajectories/batch-2026-08-08-d/README.md).
+3. **SFT** (config written, not yet run) — `training/qwen2.5-coder-7b-lora.yaml` is a ready QLoRA
+   config for Qwen2.5-Coder-7B-Instruct via axolotl, plus `training/prepare_dataset.py` to build
+   the training set from `data/trajectories/`. 45 examples — see `training/README.md`.
 4. **Eval** — benchmark the fine-tuned model's tool-use behavior against the base model on a held-out
    task set (does it read before editing? does it stop when done? does it avoid unnecessary bash
    calls?).

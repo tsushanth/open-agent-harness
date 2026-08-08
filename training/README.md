@@ -33,20 +33,20 @@ Eval milestone in the root README needs to close.
 
 ## Status: not yet run
 
-We have 72 real trajectories in `data/trajectories/` (2 loose examples + six batches of 4, 10, 14,
-16, 14, and 12), 38 of which pass `prepare_dataset.py`'s filter — the first corpus size in this
-project that's a plausible candidate for an actual (small) training run. The config above is
-still unvalidated against a real training run, though.
+We have 84 real trajectories in `data/trajectories/` (2 loose examples + seven batches of 4, 10,
+14, 16, 14, 12, and 12), 45 of which pass `prepare_dataset.py`'s filter — a plausible corpus size
+for a first (small, likely still overfitting-prone) training run. The config above is still
+unvalidated against a real training run, though.
 
-Pass rate by batch: 25% (a) → 20% (b) → 64% (c) → 69% (d) → 36% (e) → **83% (f)**. The jump at
-c/d came from fixing the dominant `completed_no_tools_used` failure mode and a real `edit_file`
-corruption bug (both detailed below). Batch e's drop was a **batch-design confound**: it packed
-multiple tasks onto shared files, and a later task's `write_file` call regenerating a whole file
-repeatedly clobbered earlier tasks' additions (each trajectory still verified correctly at the
-time it ran) — see `batch-2026-08-08-b/README.md`. Batch f retested with strict one-task-per-file
-design and got both the cleanest signal and the best result yet, suggesting shared-file batch
-design wasn't just confounding measurement, it was actively suppressing the real pass rate.
-**One-task-per-file is now the default for future batches.**
+Pass rate by batch: 25% (a) → 20% (b) → 64% (c) → 69% (d) → 36% (e) → 83% (f) → 58% (g). The jump
+at c/d came from fixing the dominant `completed_no_tools_used` failure mode and a real
+`edit_file` corruption bug (both detailed below). Batch e's drop was a **batch-design confound**:
+it packed multiple tasks onto shared files, and a later task's `write_file` call regenerating a
+whole file repeatedly clobbered earlier tasks' additions (each trajectory still verified correctly
+at the time it ran) — see `batch-2026-08-08-b/README.md`. Batches f and g both retested with
+strict one-task-per-file design (now the default) and landed at 83% and 58% respectively — a wide
+enough spread to conclude the real pass rate for this harness/model/fix combination sits somewhere
+in a 55-85% band with genuine batch-to-batch variance, not one fixed number.
 
 **Tried and reverted:** injecting a synthetic few-shot priming exchange (a worked "add a function"
 task resolved correctly via a tool call, placed between the system prompt and the real task) to
