@@ -115,18 +115,20 @@ credentials in its environment.
    working end-to-end against a real Qwen2.5-Coder-7B-Instruct endpoint (see Status above).
 2. **Trajectory collection** (in progress) — generate a corpus of tool-call trajectories: either
    distilled from a stronger teacher model solving real coding tasks with this harness, or
-   collected from your own usage. So far: 46 real sessions across 4 batches + 2 loose examples,
-   23 of which pass `prepare_dataset.py`'s filter. Pass rate climbed batch over batch as real bugs
-   got fixed — 25% (a) → 20% (b) → **64% (c)** → **69% (d)** — after fixing the dominant
-   `completed_no_tools_used` failure mode (task-reminder text) and a real `edit_file` corruption
-   bug (empty `old_string` guard). See
-   [`batch-2026-08-08-a/README.md`](data/trajectories/batch-2026-08-08-a/README.md) for the latest
-   breakdown, including a methodology note about tasks sharing scratch files sequentially. Still
-   need more volume before a training run has enough data to teach general behavior rather than
-   memorize 23 examples, but the pass rate is high enough now that further batches are efficient.
+   collected from your own usage. So far: 60 real sessions across 5 batches + 2 loose examples,
+   28 of which pass `prepare_dataset.py`'s filter. Pass rate by batch: 25% (a) → 20% (b) →
+   **64% (c)** → **69% (d)** → 36% (e) — the jump at c/d came from fixing the dominant
+   `completed_no_tools_used` failure mode and a real `edit_file` corruption bug; the drop at e is
+   a **batch-design confound, not a regression** — e packed multiple tasks onto shared files,
+   and a later task's `write_file` call regenerating a whole file repeatedly clobbered earlier
+   tasks' additions (each individual trajectory still verified correctly at the time it ran). See
+   [`batch-2026-08-08-b/README.md`](data/trajectories/batch-2026-08-08-b/README.md) for the
+   root-caused specifics and why one-task-per-file is the safer default for batch design going
+   forward. Still need more volume before a training run has enough data to teach general
+   behavior rather than memorize 28 examples.
 3. **SFT** (config written, not run) — `training/qwen2.5-coder-7b-lora.yaml` is a ready QLoRA config
    for Qwen2.5-Coder-7B-Instruct via axolotl, plus `training/prepare_dataset.py` to build the
-   training set from `data/trajectories/`. 23 examples is real progress but likely still on the
+   training set from `data/trajectories/`. 28 examples is real progress but likely still on the
    small side to avoid overfitting — see `training/README.md`.
 4. **Eval** — benchmark the fine-tuned model's tool-use behavior against the base model on a held-out
    task set (does it read before editing? does it stop when done? does it avoid unnecessary bash
