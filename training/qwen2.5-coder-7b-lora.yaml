@@ -27,6 +27,17 @@ sample_packing: false  # trajectories vary a lot in length; packing risks cross-
 lora_r: 16
 lora_alpha: 32
 lora_dropout: 0.05
+
+# Explicitly disabled: axolotl auto-enables these fused CUDA kernels for QLoRA setups unless
+# told not to. Their own lazy CUDA re-init (separate from the main model load's) crashed with
+# "NVIDIA driver too old" on 4 of 6 rented hosts tried, even though the main model load's own
+# CUDA init succeeded fine on the same hosts moments earlier — see eval/README.md. Disabling
+# trades a small amount of training speed for actually working across more of the GPU fleet.
+lora_mlp_kernel: false
+lora_qkv_kernel: false
+lora_o_kernel: false
+lora_embedding_kernel: false
+
 lora_target_modules:
   - q_proj
   - k_proj
