@@ -33,21 +33,20 @@ Eval milestone in the root README needs to close.
 
 ## Status: not yet run
 
-We have 60 real trajectories in `data/trajectories/` (2 loose examples + five batches of 4, 10,
-14, 16, and 14), 28 of which pass `prepare_dataset.py`'s filter. The config above is still
-unvalidated against a real training run. Pass rate: c 64%, d 69%, e 36% — but e's drop is a
-batch-design confound (multiple tasks sharing files, a later task's `write_file` clobbering an
-earlier one's addition), not evidence the fixes stopped working; see `batch-2026-08-08-b/README.md`.
-**Practical lesson for collecting more data:** default to one task per file per batch. It costs
-more scratch-file setup per task but avoids burning verified-at-the-time trajectories on tasks
-whose file state gets clobbered by something unrelated later in the same run.
+We have 72 real trajectories in `data/trajectories/` (2 loose examples + six batches of 4, 10, 14,
+16, 14, and 12), 38 of which pass `prepare_dataset.py`'s filter — the first corpus size in this
+project that's a plausible candidate for an actual (small) training run. The config above is
+still unvalidated against a real training run, though.
 
-Pass rate by batch: 25% (a) → 20% (b) → **64% (c)**, after fixing the dominant
-`completed_no_tools_used` failure mode and a real `edit_file` corruption bug (both below). Batch
-c's remaining failures (truncated `write_file` content, a stale "already exists" claim, a
-read/search miss, one unverified refactor) no longer share one dominant pattern the way earlier
-batches did — worth watching whether that holds up over more tasks before assuming there's another
-big fix left to find.
+Pass rate by batch: 25% (a) → 20% (b) → 64% (c) → 69% (d) → 36% (e) → **83% (f)**. The jump at
+c/d came from fixing the dominant `completed_no_tools_used` failure mode and a real `edit_file`
+corruption bug (both detailed below). Batch e's drop was a **batch-design confound**: it packed
+multiple tasks onto shared files, and a later task's `write_file` call regenerating a whole file
+repeatedly clobbered earlier tasks' additions (each trajectory still verified correctly at the
+time it ran) — see `batch-2026-08-08-b/README.md`. Batch f retested with strict one-task-per-file
+design and got both the cleanest signal and the best result yet, suggesting shared-file batch
+design wasn't just confounding measurement, it was actively suppressing the real pass rate.
+**One-task-per-file is now the default for future batches.**
 
 **Tried and reverted:** injecting a synthetic few-shot priming exchange (a worked "add a function"
 task resolved correctly via a tool call, placed between the system prompt and the real task) to
