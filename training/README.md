@@ -12,15 +12,25 @@ oah "some real coding task"
 # 2. Convert completed, clean sessions into a training set
 python3 training/prepare_dataset.py --input data/trajectories --output training/train.jsonl
 
-# 3. Fine-tune with axolotl (install separately: pip install axolotl)
+# 3. Fine-tune with axolotl — PIN the version, don't use -U (see warning below)
+pip install axolotl==0.18.0
 accelerate launch -m axolotl.cli.train training/qwen2.5-coder-7b-lora.yaml
 ```
 
 Validated on a rented RTX A5000 (24GB) using the official `winglian/axolotl:main-latest` Docker
 image — note that image does *not* actually ship axolotl pre-installed despite the name (its
-`/workspace/axolotl` is an empty mount point); run `pip install -U axolotl` inside it first, same
-as step 3 above. On that setup, install + tokenize + 3-epoch train over 45 examples took about
-8 minutes total, with the training loop itself finishing in under 3.
+`/workspace/axolotl` is an empty mount point); install it yourself first, same as step 3 above.
+On that setup, install + tokenize + 3-epoch train over 45 examples took about 8 minutes total,
+with the training loop itself finishing in under 3.
+
+**Pin the axolotl version — do not use `pip install -U axolotl`.** Two runs on the same day, same
+commands, same `winglian/axolotl:main-latest` image: the first two (`axolotl==0.18.0`, installed
+via `-U` when that happened to be latest) trained successfully. A later `-U` install pulled a
+newer axolotl whose torch dependency required a newer CUDA driver than was available — training
+failed with `RuntimeError: The NVIDIA driver on your system is too old (found version 12080)` on
+**two different physical hosts**, ruling out one bad machine. `-U` in a Docker image whose base
+CUDA/driver stack is fixed is asking for exactly this kind of drift. `axolotl==0.18.0` is the
+pinned-known-good version from the successful run's install log.
 
 `prepare_dataset.py` drops sessions that didn't reach `outcome: "completed"` and sessions
 containing a known bad pattern (the model echoing prompt instructions back — see

@@ -131,10 +131,16 @@ credentials in its environment.
    not a git repo) — reproduce it yourself with the command in `training/README.md`, or wait for
    the Release step below. **Not yet evaluated** — a converged loss curve on 45 examples proves the
    pipeline works, not that the resulting model is actually better at tool use; that's the next step.
-4. **Eval** (not started) — benchmark the fine-tuned model's tool-use behavior against the base
-   model on a held-out task set (does it read before editing? does it stop when done? does it
-   avoid unnecessary bash calls? does its pass rate on new, unseen tasks improve over the base
-   model's 55-85% band?).
+4. **Eval** (half done) — benchmark the fine-tuned model's tool-use behavior against the base
+   model on a held-out task set of 10 tasks in fresh domains never seen in training. **Base model
+   result: 8/10 (80%)**, consistent with the established 55-85% band. **LoRA-adapted result:
+   blocked** — serving the base model + adapter via vLLM's `--enable-lora` hit three real
+   environment issues in the same shared install (a `flash_attn` ABI break, a conflicting
+   `libcudnn` version, and — after isolating vLLM into its own venv fixed both of those — a
+   version-drift issue where `pip install -U axolotl` started pulling a newer torch requiring a
+   CUDA driver newer than what two different rented hosts had, even though the identical command
+   had trained successfully hours earlier). See `training/README.md` for the pinned-version fix
+   (`axolotl==0.18.0`) — not yet re-attempted with the fix in place.
 5. **Release** (not started) — publish the LoRA adapter (and merged weights, if licensing allows)
    on Hugging Face. Needs a Hugging Face account/token — not yet configured for this project.
 
