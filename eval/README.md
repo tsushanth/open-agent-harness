@@ -75,18 +75,21 @@ second pod — training and eval ran back-to-back inside one pod. Much slower pe
 
 ## Next steps
 
-**Update (2026-08-08 / 2026-08-09):** ran two follow-up trajectory batches specifically to grow
+**Update (2026-08-08 / 2026-08-09):** ran three follow-up trajectory batches specifically to grow
 bug-fix/refactor volume per point 2 below.
 [`batch-2026-08-08-f/`](../data/trajectories/batch-2026-08-08-f/README.md): 15 tasks, 4 survived
-review as genuinely clean (1 more looked like a pass but was a false positive — original buggy code
-coincidentally satisfied the specific test input).
-[`batch-2026-08-09-g/`](../data/trajectories/batch-2026-08-09-g/README.md): 15 more tasks, 6
-survived review, all confirmed genuine this round. **Both batches independently found the same
-pattern: every refactor task failed (0/8 combined), while plain bug fixes passed at a much higher
-rate (~45%)** — two data points now, worth treating as a real capability gap rather than batch
-noise. Corpus-wide clean bug-fix/refactor count is now 14 (4 from batch h + 4 + 6 new), close to
-but still short of the 20-30+ target below — one more similarly-sized batch should cross it before
-it's worth re-running the isolation-test retrain/eval comparison.
+review (1 false positive — buggy original coincidentally satisfied the test input).
+[`batch-2026-08-09-g/`](../data/trajectories/batch-2026-08-09-g/README.md): 15 tasks, 6 survived,
+all genuine.
+[`batch-2026-08-09-i/`](../data/trajectories/batch-2026-08-09-i/README.md): 15 tasks, 5 survived
+(1 false positive — this one caused by a bug in the verify command's own structural check, not the
+model; the check was only ever tested against the fixed reference, never confirmed to actually
+reject the buggy original, so it silently passed on an untouched file). **All three batches point
+at the same pattern: refactor tasks fail far more often than plain bug fixes — only 1 genuine
+refactor pass out of 12 attempted across the three batches**, worth treating as a real capability
+gap rather than batch noise. Corpus-wide clean bug-fix/refactor count is now 19 (4 from batch h +
+4 + 6 + 5 new), within reach of the 20-30+ target below — likely close enough to be worth planning
+the retrain/eval comparison after one more small batch, or even trying it now.
 
 The isolation test resolved the "what's the actual lever" question. What's left is acting on it:
 

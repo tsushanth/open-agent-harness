@@ -115,21 +115,24 @@ credentials in its environment.
    working end-to-end against a real Qwen2.5-Coder-7B-Instruct endpoint (see Status above).
 2. **Trajectory collection** (in progress) — generate a corpus of tool-call trajectories: either
    distilled from a stronger teacher model solving real coding tasks with this harness, or
-   collected from your own usage. So far: 103 real sessions across 10 batches + 2 loose examples,
-   58 of which pass `prepare_dataset.py`'s filter. Batches a-g (the original letters, mostly "add a
-   function/method to a file") ranged 20-83% pass rate; three later batches deliberately targeted
+   collected from your own usage. So far: 108 real sessions across 11 batches + 2 loose examples,
+   63 of which pass `prepare_dataset.py`'s filter. Batches a-g (the original letters, mostly "add a
+   function/method to a file") ranged 20-83% pass rate; four later batches deliberately targeted
    bug fixes, refactors, and multi-step tasks to grow that underrepresented shape per the Eval
    findings below — batch h (36%, 2 of 6 apparent passes later found corrupted),
-   `batch-2026-08-08-f` (27%, 1 of 5 apparent passes later found a false positive), and
-   `batch-2026-08-09-g` (40%, all 6 apparent passes confirmed genuine). See
+   `batch-2026-08-08-f` (27%, 1 of 5 apparent passes later found a false positive),
+   `batch-2026-08-09-g` (40%, all 6 apparent passes confirmed genuine), and `batch-2026-08-09-i`
+   (33%, 1 of 6 apparent passes later found a false positive caused by a bug in the verify command
+   itself — see its README). See
    [`batch-2026-08-08-e/README.md`](data/trajectories/batch-2026-08-08-e/README.md),
-   [`batch-2026-08-08-f/README.md`](data/trajectories/batch-2026-08-08-f/README.md), and
-   [`batch-2026-08-09-g/README.md`](data/trajectories/batch-2026-08-09-g/README.md) — combined,
-   the corpus now has 14 clean bug-fix/refactor examples, still short of the 20-30+ target
-   `eval/README.md` called for but close. A consistent pattern held across both later batches:
-   **every refactor task failed (0/8 combined)** while plain bug fixes passed at a much higher
-   rate (~45%) — worth treating as a real base-model weak spot with this harness's tool-call
-   protocol, not batch noise.
+   [`batch-2026-08-08-f/README.md`](data/trajectories/batch-2026-08-08-f/README.md),
+   [`batch-2026-08-09-g/README.md`](data/trajectories/batch-2026-08-09-g/README.md), and
+   [`batch-2026-08-09-i/README.md`](data/trajectories/batch-2026-08-09-i/README.md) — combined,
+   the corpus now has 19 clean bug-fix/refactor examples, within reach of the 20-30+ target
+   `eval/README.md` called for. A consistent pattern held across all four later batches:
+   refactor tasks failed far more often than plain bug fixes (only 1 genuine refactor pass out of
+   12 attempted across these batches) — worth treating as a real base-model weak spot with this
+   harness's tool-call protocol, not batch noise.
 3. **SFT** (done, reliable) — trained `training/qwen2.5-coder-7b-lora.yaml`'s QLoRA config four
    times across two corpus versions and two recipes. Loss converges cleanly every time, producing
    a real ~154MB LoRA adapter (40M trainable params, 0.53% of the 7.6B total). Hit and fixed a real
