@@ -75,13 +75,18 @@ second pod — training and eval ran back-to-back inside one pod. Much slower pe
 
 ## Next steps
 
-**Update (2026-08-08):** ran a follow-up trajectory batch (`data/trajectories/batch-2026-08-08-f/`)
-specifically to grow bug-fix/refactor volume per point 2 below. 15 new tasks, only 4 survived
-review as genuinely clean (1 more looked like a pass but was a false positive — original buggy
-code coincidentally satisfied the specific test input; all 4 refactor tasks failed outright,
-caught by the stricter structural verify checks added after batch h's lesson). Corpus-wide clean
-bug-fix/refactor count is now 8 (4 from batch h + 4 new), still well short of the 20-30+ target
-below — not yet worth re-running the isolation-test retrain/eval comparison. More batches needed.
+**Update (2026-08-08 / 2026-08-09):** ran two follow-up trajectory batches specifically to grow
+bug-fix/refactor volume per point 2 below.
+[`batch-2026-08-08-f/`](../data/trajectories/batch-2026-08-08-f/README.md): 15 tasks, 4 survived
+review as genuinely clean (1 more looked like a pass but was a false positive — original buggy code
+coincidentally satisfied the specific test input).
+[`batch-2026-08-09-g/`](../data/trajectories/batch-2026-08-09-g/README.md): 15 more tasks, 6
+survived review, all confirmed genuine this round. **Both batches independently found the same
+pattern: every refactor task failed (0/8 combined), while plain bug fixes passed at a much higher
+rate (~45%)** — two data points now, worth treating as a real capability gap rather than batch
+noise. Corpus-wide clean bug-fix/refactor count is now 14 (4 from batch h + 4 + 6 new), close to
+but still short of the 20-30+ target below — one more similarly-sized batch should cross it before
+it's worth re-running the isolation-test retrain/eval comparison.
 
 The isolation test resolved the "what's the actual lever" question. What's left is acting on it:
 
