@@ -1,0 +1,502 @@
+{
+  "set_a": {
+    "label": "set_a",
+    "passed": 10,
+    "total": 10,
+    "samples": 3,
+    "results": [
+      {
+        "task": "Add a cylinder_volume(r, h) function to h1_area_calc.py that returns pi*r^2*h using the math module",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "h1_area_calc.py": "--- a/h1_area_calc.py\n+++ b/h1_area_calc.py\n@@ -1,3 +1,8 @@\n def sphere_volume(r):\n     import math\n     return (4/3) * math.pi * r**3\n+\n+\n+def cylinder_volume(r, h):\n+    import math\n+    return math.pi * r**2 * h\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h1_area_calc.py": "--- a/h1_area_calc.py\n+++ b/h1_area_calc.py\n@@ -1,3 +1,8 @@\n def sphere_volume(r):\n     import math\n     return (4/3) * math.pi * r**3\n+\n+\n+def cylinder_volume(r, h):\n+    import math\n+    return math.pi * r**2 * h\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h1_area_calc.py": "--- a/h1_area_calc.py\n+++ b/h1_area_calc.py\n@@ -1,3 +1,8 @@\n def sphere_volume(r):\n     import math\n     return (4/3) * math.pi * r**3\n+\n+\n+def cylinder_volume(r, h):\n+    import math\n+    return math.pi * r**2 * h\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h1_area_calc.py": "--- a/h1_area_calc.py\n+++ b/h1_area_calc.py\n@@ -1,3 +1,8 @@\n def sphere_volume(r):\n     import math\n     return (4/3) * math.pi * r**3\n+\n+\n+def cylinder_volume(r, h):\n+    import math\n+    return math.pi * r**2 * h\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "Add a ship(sku, qty) method to the Warehouse class in h2_inventory2.py that decrements self.items[sku] by qty",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "h2_inventory2.py": "--- a/h2_inventory2.py\n+++ b/h2_inventory2.py\n@@ -4,3 +4,6 @@\n \n     def receive(self, sku, qty):\n         self.items[sku] = self.items.get(sku, 0) + qty\n+\n+    def ship(self, sku, qty):\n+        self.items[sku] = self.items.get(sku, 0) - qty\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h2_inventory2.py": "--- a/h2_inventory2.py\n+++ b/h2_inventory2.py\n@@ -4,3 +4,6 @@\n \n     def receive(self, sku, qty):\n         self.items[sku] = self.items.get(sku, 0) + qty\n+\n+    def ship(self, sku, qty):\n+        self.items[sku] = self.items.get(sku, 0) - qty\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h2_inventory2.py": "--- a/h2_inventory2.py\n+++ b/h2_inventory2.py\n@@ -4,3 +4,6 @@\n \n     def receive(self, sku, qty):\n         self.items[sku] = self.items.get(sku, 0) + qty\n+\n+    def ship(self, sku, qty):\n+        self.items[sku] = self.items.get(sku, 0) - qty\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h2_inventory2.py": "--- a/h2_inventory2.py\n+++ b/h2_inventory2.py\n@@ -4,3 +4,6 @@\n \n     def receive(self, sku, qty):\n         self.items[sku] = self.items.get(sku, 0) + qty\n+\n+    def ship(self, sku, qty):\n+        self.items[sku] = self.items.get(sku, 0) - qty\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "Add a snake_case(s) function to h3_string_ops.py that converts a title-case string like \"Hello World\" to \"hello_world\"",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "h3_string_ops.py": "--- a/h3_string_ops.py\n+++ b/h3_string_ops.py\n@@ -1,2 +1,6 @@\n def title_case(s):\n     return ' '.join(w.capitalize() for w in s.split())\n+\n+\n+def snake_case(s):\n+    return '_'.join(w.lower() for w in s.split())\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h3_string_ops.py": "--- a/h3_string_ops.py\n+++ b/h3_string_ops.py\n@@ -1,2 +1,6 @@\n def title_case(s):\n     return ' '.join(w.capitalize() for w in s.split())\n+\n+\n+def snake_case(s):\n+    return '_'.join(w.lower() for w in s.split())\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h3_string_ops.py": "--- a/h3_string_ops.py\n+++ b/h3_string_ops.py\n@@ -1,2 +1,6 @@\n def title_case(s):\n     return ' '.join(w.capitalize() for w in s.split())\n+\n+\n+def snake_case(s):\n+    return '_'.join(w.lower() for w in s.split())\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h3_string_ops.py": "--- a/h3_string_ops.py\n+++ b/h3_string_ops.py\n@@ -1,2 +1,6 @@\n def title_case(s):\n     return ' '.join(w.capitalize() for w in s.split())\n+\n+\n+def snake_case(s):\n+    return '_'.join(w.lower() for w in s.split())\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "Add a max_depth(s) function to h4_bracket_check.py that returns the maximum nesting depth of brackets in s",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "h4_bracket_check.py": "--- a/h4_bracket_check.py\n+++ b/h4_bracket_check.py\n@@ -1,3 +1,15 @@\n+def max_depth(s):\n+    depth = 0\n+    max_d = 0\n+    for c in s:\n+        if c in '([{':\n+            depth += 1\n+            max_d = max(max_d, depth)\n+        elif c in ')]}':\n+            depth -= 1\n+    return max_d\n+\n+\n def is_balanced(s):\n     stack = []\n     pairs = {')': '(', ']': '[', '}': '{'}\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h4_bracket_check.py": "--- a/h4_bracket_check.py\n+++ b/h4_bracket_check.py\n@@ -1,3 +1,15 @@\n+def max_depth(s):\n+    depth = 0\n+    max_d = 0\n+    for c in s:\n+        if c in '([{':\n+            depth += 1\n+            max_d = max(max_d, depth)\n+        elif c in ')]}':\n+            depth -= 1\n+    return max_d\n+\n+\n def is_balanced(s):\n     stack = []\n     pairs = {')': '(', ']': '[', '}': '{'}\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h4_bracket_check.py": "--- a/h4_bracket_check.py\n+++ b/h4_bracket_check.py\n@@ -1,3 +1,15 @@\n+def max_depth(s):\n+    depth = 0\n+    max_d = 0\n+    for c in s:\n+        if c in '([{':\n+            depth += 1\n+            max_d = max(max_d, depth)\n+        elif c in ')]}':\n+            depth -= 1\n+    return max_d\n+\n+\n def is_balanced(s):\n     stack = []\n     pairs = {')': '(', ']': '[', '}': '{'}\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h4_bracket_check.py": "--- a/h4_bracket_check.py\n+++ b/h4_bracket_check.py\n@@ -1,3 +1,15 @@\n+def max_depth(s):\n+    depth = 0\n+    max_d = 0\n+    for c in s:\n+        if c in '([{':\n+            depth += 1\n+            max_d = max(max_d, depth)\n+        elif c in ')]}':\n+            depth -= 1\n+    return max_d\n+\n+\n def is_balanced(s):\n     stack = []\n     pairs = {')': '(', ']': '[', '}': '{'}\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "Add a top_player() method to the Leaderboard class in h5_leaderboard.py that returns the player name with the highest score in self.entries",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "h5_leaderboard.py": "--- a/h5_leaderboard.py\n+++ b/h5_leaderboard.py\n@@ -4,3 +4,8 @@\n \n     def submit_score(self, player, score):\n         self.entries[player] = score\n+\n+    def top_player(self):\n+        if not self.entries:\n+            return None\n+        return max(self.entries, key=self.entries.get)\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h5_leaderboard.py": "--- a/h5_leaderboard.py\n+++ b/h5_leaderboard.py\n@@ -4,3 +4,8 @@\n \n     def submit_score(self, player, score):\n         self.entries[player] = score\n+\n+    def top_player(self):\n+        if not self.entries:\n+            return None\n+        return max(self.entries, key=self.entries.get)\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h5_leaderboard.py": "--- a/h5_leaderboard.py\n+++ b/h5_leaderboard.py\n@@ -4,3 +4,8 @@\n \n     def submit_score(self, player, score):\n         self.entries[player] = score\n+\n+    def top_player(self):\n+        if not self.entries:\n+            return None\n+        return max(self.entries, key=self.entries.get)\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h5_leaderboard.py": "--- a/h5_leaderboard.py\n+++ b/h5_leaderboard.py\n@@ -4,3 +4,8 @@\n \n     def submit_score(self, player, score):\n         self.entries[player] = score\n+\n+    def top_player(self):\n+        if not self.entries:\n+            return None\n+        return max(self.entries, key=self.entries.get)\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "Add a km_to_miles(km) function to h6_unit_convert.py that reverses miles_to_km",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "h6_unit_convert.py": "--- a/h6_unit_convert.py\n+++ b/h6_unit_convert.py\n@@ -1,2 +1,6 @@\n def miles_to_km(miles):\n     return miles * 1.60934\n+\n+\n+def km_to_miles(km):\n+    return km / 1.60934\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h6_unit_convert.py": "--- a/h6_unit_convert.py\n+++ b/h6_unit_convert.py\n@@ -1,2 +1,6 @@\n def miles_to_km(miles):\n     return miles * 1.60934\n+\n+\n+def km_to_miles(km):\n+    return km / 1.60934\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h6_unit_convert.py": "--- a/h6_unit_convert.py\n+++ b/h6_unit_convert.py\n@@ -1,2 +1,6 @@\n def miles_to_km(miles):\n     return miles * 1.60934\n+\n+\n+def km_to_miles(km):\n+    return km / 1.60934\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h6_unit_convert.py": "--- a/h6_unit_convert.py\n+++ b/h6_unit_convert.py\n@@ -1,2 +1,6 @@\n def miles_to_km(miles):\n     return miles * 1.60934\n+\n+\n+def km_to_miles(km):\n+    return km / 1.60934\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "Add a highest_priority() method to the TaskQueue class in h7_task_queue.py that returns the name of the task with the highest priority value in self.tasks",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "h7_task_queue.py": "--- a/h7_task_queue.py\n+++ b/h7_task_queue.py\n@@ -4,3 +4,8 @@\n \n     def add_task(self, name, priority=0):\n         self.tasks.append({\"name\": name, \"priority\": priority})\n+\n+    def highest_priority(self):\n+        if not self.tasks:\n+            return None\n+        return max(self.tasks, key=lambda task: task[\"priority\"])[\"name\"]\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h7_task_queue.py": "--- a/h7_task_queue.py\n+++ b/h7_task_queue.py\n@@ -4,3 +4,8 @@\n \n     def add_task(self, name, priority=0):\n         self.tasks.append({\"name\": name, \"priority\": priority})\n+\n+    def highest_priority(self):\n+        if not self.tasks:\n+            return None\n+        return max(self.tasks, key=lambda task: task[\"priority\"])[\"name\"]\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h7_task_queue.py": "--- a/h7_task_queue.py\n+++ b/h7_task_queue.py\n@@ -4,3 +4,8 @@\n \n     def add_task(self, name, priority=0):\n         self.tasks.append({\"name\": name, \"priority\": priority})\n+\n+    def highest_priority(self):\n+        if not self.tasks:\n+            return None\n+        return max(self.tasks, key=lambda task: task[\"priority\"])[\"name\"]\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h7_task_queue.py": "--- a/h7_task_queue.py\n+++ b/h7_task_queue.py\n@@ -4,3 +4,8 @@\n \n     def add_task(self, name, priority=0):\n         self.tasks.append({\"name\": name, \"priority\": priority})\n+\n+    def highest_priority(self):\n+        if not self.tasks:\n+            return None\n+        return max(self.tasks, key=lambda task: task[\"priority\"])[\"name\"]\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "Add a normalize_hex(s) function to h8_validators2.py that lowercases a hex color string like #ABCDEF",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "h8_validators2.py": "--- a/h8_validators2.py\n+++ b/h8_validators2.py\n@@ -1,3 +1,8 @@\n def is_valid_hex_color(s):\n     import re\n     return bool(re.match(r'^#[0-9A-Fa-f]{6}$', s))\n+\n+\n+def normalize_hex(s):\n+    \"\"\"Lowercase a hex color string like #ABCDEF -> #abcdef.\"\"\"\n+    return s.lower()\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h8_validators2.py": "--- a/h8_validators2.py\n+++ b/h8_validators2.py\n@@ -1,3 +1,8 @@\n def is_valid_hex_color(s):\n     import re\n     return bool(re.match(r'^#[0-9A-Fa-f]{6}$', s))\n+\n+\n+def normalize_hex(s):\n+    \"\"\"Lowercase a hex color string like #ABCDEF -> #abcdef.\"\"\"\n+    return s.lower()\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h8_validators2.py": "--- a/h8_validators2.py\n+++ b/h8_validators2.py\n@@ -1,3 +1,8 @@\n def is_valid_hex_color(s):\n     import re\n     return bool(re.match(r'^#[0-9A-Fa-f]{6}$', s))\n+\n+\n+def normalize_hex(s):\n+    \"\"\"Lowercase a hex color string like #ABCDEF -> #abcdef.\"\"\"\n+    return s.lower()\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h8_validators2.py": "--- a/h8_validators2.py\n+++ b/h8_validators2.py\n@@ -1,3 +1,8 @@\n def is_valid_hex_color(s):\n     import re\n     return bool(re.match(r'^#[0-9A-Fa-f]{6}$', s))\n+\n+\n+def normalize_hex(s):\n+    \"\"\"Lowercase a hex color string like #ABCDEF -> #abcdef.\"\"\"\n+    return s.lower()\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "Add a matrix_max(m) function to h9_matrix2.py that returns the maximum value across all elements in the 2D list m",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "h9_matrix2.py": "--- a/h9_matrix2.py\n+++ b/h9_matrix2.py\n@@ -1,2 +1,6 @@\n def matrix_sum(m):\n     return sum(sum(row) for row in m)\n+\n+\n+def matrix_max(m):\n+    return max(max(row) for row in m)\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h9_matrix2.py": "--- a/h9_matrix2.py\n+++ b/h9_matrix2.py\n@@ -1,2 +1,6 @@\n def matrix_sum(m):\n     return sum(sum(row) for row in m)\n+\n+\n+def matrix_max(m):\n+    return max(max(row) for row in m)\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h9_matrix2.py": "--- a/h9_matrix2.py\n+++ b/h9_matrix2.py\n@@ -1,2 +1,6 @@\n def matrix_sum(m):\n     return sum(sum(row) for row in m)\n+\n+\n+def matrix_max(m):\n+    return max(max(row) for row in m)\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h9_matrix2.py": "--- a/h9_matrix2.py\n+++ b/h9_matrix2.py\n@@ -1,2 +1,6 @@\n def matrix_sum(m):\n     return sum(sum(row) for row in m)\n+\n+\n+def matrix_max(m):\n+    return max(max(row) for row in m)\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "Add a longest_decreasing_streak(nums) function to h10_streak.py, mirroring the existing longest_streak but for consecutive decreasing values",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "h10_streak.py": "--- a/h10_streak.py\n+++ b/h10_streak.py\n@@ -9,3 +9,16 @@\n         else:\n             cur = 1\n     return best\n+\n+\n+def longest_decreasing_streak(nums):\n+    if not nums:\n+        return 0\n+    best = cur = 1\n+    for i in range(1, len(nums)):\n+        if nums[i] == nums[i-1] - 1:\n+            cur += 1\n+            best = max(best, cur)\n+        else:\n+            cur = 1\n+    return best\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h10_streak.py": "--- a/h10_streak.py\n+++ b/h10_streak.py\n@@ -9,3 +9,16 @@\n         else:\n             cur = 1\n     return best\n+\n+\n+def longest_decreasing_streak(nums):\n+    if not nums:\n+        return 0\n+    best = cur = 1\n+    for i in range(1, len(nums)):\n+        if nums[i] == nums[i-1] - 1:\n+            cur += 1\n+            best = max(best, cur)\n+        else:\n+            cur = 1\n+    return best\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h10_streak.py": "--- a/h10_streak.py\n+++ b/h10_streak.py\n@@ -9,3 +9,16 @@\n         else:\n             cur = 1\n     return best\n+\n+\n+def longest_decreasing_streak(nums):\n+    if not nums:\n+        return 0\n+    best = cur = 1\n+    for i in range(1, len(nums)):\n+        if nums[i] == nums[i-1] - 1:\n+            cur += 1\n+            best = max(best, cur)\n+        else:\n+            cur = 1\n+    return best\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "h10_streak.py": "--- a/h10_streak.py\n+++ b/h10_streak.py\n@@ -9,3 +9,16 @@\n         else:\n             cur = 1\n     return best\n+\n+\n+def longest_decreasing_streak(nums):\n+    if not nums:\n+        return 0\n+    best = cur = 1\n+    for i in range(1, len(nums)):\n+        if nums[i] == nums[i-1] - 1:\n+            cur += 1\n+            best = max(best, cur)\n+        else:\n+            cur = 1\n+    return best\n"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "set_b": {
+    "label": "set_b",
+    "passed": 8,
+    "total": 8,
+    "samples": 3,
+    "results": [
+      {
+        "task": "is_valid_age in e1_bug_wrongcompare.py should also accept age==0 for newborns, but currently excludes it because it uses > instead of >=. Fix it",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "e1_bug_wrongcompare.py": "--- a/e1_bug_wrongcompare.py\n+++ b/e1_bug_wrongcompare.py\n@@ -1,2 +1,2 @@\n def is_valid_age(age):\n-    return age > 0 and age < 150\n+    return age >= 0 and age < 150\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e1_bug_wrongcompare.py": "--- a/e1_bug_wrongcompare.py\n+++ b/e1_bug_wrongcompare.py\n@@ -1,2 +1,2 @@\n def is_valid_age(age):\n-    return age > 0 and age < 150\n+    return age >= 0 and age < 150\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e1_bug_wrongcompare.py": "--- a/e1_bug_wrongcompare.py\n+++ b/e1_bug_wrongcompare.py\n@@ -1,2 +1,2 @@\n def is_valid_age(age):\n-    return age > 0 and age < 150\n+    return age >= 0 and age < 150\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e1_bug_wrongcompare.py": "--- a/e1_bug_wrongcompare.py\n+++ b/e1_bug_wrongcompare.py\n@@ -1,2 +1,2 @@\n def is_valid_age(age):\n-    return age > 0 and age < 150\n+    return age >= 0 and age < 150\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "get_last_two in e2_bug_index.py has a bug \u2014 it returns the last item duplicated instead of the actual last two distinct items. Fix it",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "e2_bug_index.py": "--- a/e2_bug_index.py\n+++ b/e2_bug_index.py\n@@ -1,2 +1,2 @@\n def get_last_two(items):\n-    return [items[-1], items[-1]]\n+    return items[-2:]\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e2_bug_index.py": "--- a/e2_bug_index.py\n+++ b/e2_bug_index.py\n@@ -1,2 +1,2 @@\n def get_last_two(items):\n-    return [items[-1], items[-1]]\n+    return items[-2:]\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e2_bug_index.py": "--- a/e2_bug_index.py\n+++ b/e2_bug_index.py\n@@ -1,2 +1,2 @@\n def get_last_two(items):\n-    return [items[-1], items[-1]]\n+    return [items[-2], items[-1]]\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e2_bug_index.py": "--- a/e2_bug_index.py\n+++ b/e2_bug_index.py\n@@ -1,2 +1,2 @@\n def get_last_two(items):\n-    return [items[-1], items[-1]]\n+    return items[-2:]\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "product_of_list in e3_bug_accumulator.py always returns 0 because the accumulator starts at the wrong value. Fix it",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "e3_bug_accumulator.py": "--- a/e3_bug_accumulator.py\n+++ b/e3_bug_accumulator.py\n@@ -1,5 +1,5 @@\n def product_of_list(nums):\n-    result = 0\n+    result = 1\n     for n in nums:\n         result *= n\n     return result\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e3_bug_accumulator.py": "--- a/e3_bug_accumulator.py\n+++ b/e3_bug_accumulator.py\n@@ -1,5 +1,5 @@\n def product_of_list(nums):\n-    result = 0\n+    result = 1\n     for n in nums:\n         result *= n\n     return result\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e3_bug_accumulator.py": "--- a/e3_bug_accumulator.py\n+++ b/e3_bug_accumulator.py\n@@ -1,5 +1,5 @@\n def product_of_list(nums):\n-    result = 0\n+    result = 1\n     for n in nums:\n         result *= n\n     return result\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e3_bug_accumulator.py": "--- a/e3_bug_accumulator.py\n+++ b/e3_bug_accumulator.py\n@@ -1,5 +1,5 @@\n def product_of_list(nums):\n-    result = 0\n+    result = 1\n     for n in nums:\n         result *= n\n     return result\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "contains_word in e4_bug_stringcase.py should be case-insensitive but currently isn't. Fix it",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "e4_bug_stringcase.py": "--- a/e4_bug_stringcase.py\n+++ b/e4_bug_stringcase.py\n@@ -1,2 +1,2 @@\n def contains_word(text, word):\n-    return word in text\n+    return word.lower() in text.lower()\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e4_bug_stringcase.py": "--- a/e4_bug_stringcase.py\n+++ b/e4_bug_stringcase.py\n@@ -1,2 +1,2 @@\n def contains_word(text, word):\n-    return word in text\n+    return word.lower() in text.lower()\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e4_bug_stringcase.py": "--- a/e4_bug_stringcase.py\n+++ b/e4_bug_stringcase.py\n@@ -1,2 +1,2 @@\n def contains_word(text, word):\n-    return word in text\n+    return word.lower() in text.lower()\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e4_bug_stringcase.py": "--- a/e4_bug_stringcase.py\n+++ b/e4_bug_stringcase.py\n@@ -1,2 +1,2 @@\n def contains_word(text, word):\n-    return word in text\n+    return word.lower() in text.lower()\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "The Counter class in e5_bug_default_state.py uses a class-level attribute for total, so all instances incorrectly share the same counter. Fix it so each instance has its own independent counter",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "e5_bug_default_state.py": "--- a/e5_bug_default_state.py\n+++ b/e5_bug_default_state.py\n@@ -1,6 +1,7 @@\n class Counter:\n-    total = 0\n+    def __init__(self):\n+        self.total = 0\n \n     def increment(self):\n-        Counter.total += 1\n-        return Counter.total\n+        self.total += 1\n+        return self.total\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e5_bug_default_state.py": "--- a/e5_bug_default_state.py\n+++ b/e5_bug_default_state.py\n@@ -1,6 +1,7 @@\n class Counter:\n-    total = 0\n+    def __init__(self):\n+        self.total = 0\n \n     def increment(self):\n-        Counter.total += 1\n-        return Counter.total\n+        self.total += 1\n+        return self.total\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e5_bug_default_state.py": "--- a/e5_bug_default_state.py\n+++ b/e5_bug_default_state.py\n@@ -1,6 +1,7 @@\n class Counter:\n-    total = 0\n+    def __init__(self):\n+        self.total = 0\n \n     def increment(self):\n-        Counter.total += 1\n-        return Counter.total\n+        self.total += 1\n+        return self.total\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e5_bug_default_state.py": "--- a/e5_bug_default_state.py\n+++ b/e5_bug_default_state.py\n@@ -1,6 +1,7 @@\n class Counter:\n-    total = 0\n+    def __init__(self):\n+        self.total = 0\n \n     def increment(self):\n-        Counter.total += 1\n-        return Counter.total\n+        self.total += 1\n+        return self.total\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "describe_temp in e6_refactor_repeat.py repeats the same f-string message construction in every branch. Refactor it to build the category once then construct the message once, keeping identical behavior",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "e6_refactor_repeat.py": "--- a/e6_refactor_repeat.py\n+++ b/e6_refactor_repeat.py\n@@ -1,14 +1,11 @@\n def describe_temp(celsius):\n     if celsius < 0:\n         category = \"freezing\"\n-        message = f\"It's {category}: {celsius}C\"\n     elif celsius < 15:\n         category = \"cold\"\n-        message = f\"It's {category}: {celsius}C\"\n     elif celsius < 25:\n         category = \"mild\"\n-        message = f\"It's {category}: {celsius}C\"\n     else:\n         category = \"hot\"\n-        message = f\"It's {category}: {celsius}C\"\n+    message = f\"It's {category}: {celsius}C\"\n     return message\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e6_refactor_repeat.py": "--- a/e6_refactor_repeat.py\n+++ b/e6_refactor_repeat.py\n@@ -1,14 +1,11 @@\n def describe_temp(celsius):\n     if celsius < 0:\n         category = \"freezing\"\n-        message = f\"It's {category}: {celsius}C\"\n     elif celsius < 15:\n         category = \"cold\"\n-        message = f\"It's {category}: {celsius}C\"\n     elif celsius < 25:\n         category = \"mild\"\n-        message = f\"It's {category}: {celsius}C\"\n     else:\n         category = \"hot\"\n-        message = f\"It's {category}: {celsius}C\"\n+    message = f\"It's {category}: {celsius}C\"\n     return message\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e6_refactor_repeat.py": "--- a/e6_refactor_repeat.py\n+++ b/e6_refactor_repeat.py\n@@ -1,14 +1,11 @@\n def describe_temp(celsius):\n     if celsius < 0:\n         category = \"freezing\"\n-        message = f\"It's {category}: {celsius}C\"\n     elif celsius < 15:\n         category = \"cold\"\n-        message = f\"It's {category}: {celsius}C\"\n     elif celsius < 25:\n         category = \"mild\"\n-        message = f\"It's {category}: {celsius}C\"\n     else:\n         category = \"hot\"\n-        message = f\"It's {category}: {celsius}C\"\n+    message = f\"It's {category}: {celsius}C\"\n     return message\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e6_refactor_repeat.py": "--- a/e6_refactor_repeat.py\n+++ b/e6_refactor_repeat.py\n@@ -1,14 +1,11 @@\n def describe_temp(celsius):\n     if celsius < 0:\n         category = \"freezing\"\n-        message = f\"It's {category}: {celsius}C\"\n     elif celsius < 15:\n         category = \"cold\"\n-        message = f\"It's {category}: {celsius}C\"\n     elif celsius < 25:\n         category = \"mild\"\n-        message = f\"It's {category}: {celsius}C\"\n     else:\n         category = \"hot\"\n-        message = f\"It's {category}: {celsius}C\"\n+    message = f\"It's {category}: {celsius}C\"\n     return message\n"
+            }
+          }
+        ]
+      },
+      {
+        "task": "can_checkout in e7_refactor_condition.py has needlessly nested if/else with '== True' comparisons. Refactor it to a single boolean expression, keeping identical behavior",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "e7_refactor_condition.py": "--- a/e7_refactor_condition.py\n+++ b/e7_refactor_condition.py\n@@ -1,11 +1,2 @@\n def can_checkout(cart_total, has_payment_method, is_logged_in):\n-    if is_logged_in == True:\n-        if has_payment_method == True:\n-            if cart_total > 0:\n-                return True\n-            else:\n-                return False\n-        else:\n-            return False\n-    else:\n-        return False\n+    return is_logged_in and has_payment_method and cart_total > 0\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e7_refactor_condition.py": "--- a/e7_refactor_condition.py\n+++ b/e7_refactor_condition.py\n@@ -1,11 +1,2 @@\n def can_checkout(cart_total, has_payment_method, is_logged_in):\n-    if is_logged_in == True:\n-        if has_payment_method == True:\n-            if cart_total > 0:\n-                return True\n-            else:\n-                return False\n-        else:\n-            return False\n-    else:\n-        return False\n+    return is_logged_in and has_payment_method and cart_total > 0\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e7_refactor_condition.py": "--- a/e7_refactor_condition.py\n+++ b/e7_refactor_condition.py\n@@ -1,11 +1,2 @@\n def can_checkout(cart_total, has_payment_method, is_logged_in):\n-    if is_logged_in == True:\n-        if has_payment_method == True:\n-            if cart_total > 0:\n-                return True\n-            else:\n-                return False\n-        else:\n-            return False\n-    else:\n-        return False\n+    return is_logged_in and has_payment_method and cart_total > 0\n"
+            }
+          },
+          {
+            "outcome": "completed_no_tools_used_verified_pass",
+            "diffs": {}
+          }
+        ]
+      },
+      {
+        "task": "Downloader.__init__ in e8_multistep_cache.py hardcodes retries=0 and timeout=1 instead of using the existing Config.MAX_RETRIES and Config.TIMEOUT_SECONDS constants. Fix it",
+        "outcome": "completed_verified_pass",
+        "diffs": {
+          "e8_multistep_cache.py": "--- a/e8_multistep_cache.py\n+++ b/e8_multistep_cache.py\n@@ -4,5 +4,5 @@\n \n class Downloader:\n     def __init__(self):\n-        self.retries = 0\n-        self.timeout = 1\n+        self.retries = Config.MAX_RETRIES\n+        self.timeout = Config.TIMEOUT_SECONDS\n"
+        },
+        "samples": [
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e8_multistep_cache.py": "--- a/e8_multistep_cache.py\n+++ b/e8_multistep_cache.py\n@@ -4,5 +4,5 @@\n \n class Downloader:\n     def __init__(self):\n-        self.retries = 0\n-        self.timeout = 1\n+        self.retries = Config.MAX_RETRIES\n+        self.timeout = Config.TIMEOUT_SECONDS\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e8_multistep_cache.py": "--- a/e8_multistep_cache.py\n+++ b/e8_multistep_cache.py\n@@ -4,5 +4,5 @@\n \n class Downloader:\n     def __init__(self):\n-        self.retries = 0\n-        self.timeout = 1\n+        self.retries = Config.MAX_RETRIES\n+        self.timeout = Config.TIMEOUT_SECONDS\n"
+            }
+          },
+          {
+            "outcome": "completed_verified_pass",
+            "diffs": {
+              "e8_multistep_cache.py": "--- a/e8_multistep_cache.py\n+++ b/e8_multistep_cache.py\n@@ -4,5 +4,5 @@\n \n class Downloader:\n     def __init__(self):\n-        self.retries = 0\n-        self.timeout = 1\n+        self.retries = Config.MAX_RETRIES\n+        self.timeout = Config.TIMEOUT_SECONDS\n"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

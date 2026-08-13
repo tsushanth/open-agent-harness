@@ -9,9 +9,13 @@ the tool-call format), that's evidence the harness's system prompt / tool schema
 a real defect independent of any model's raw capability. Read alongside eval/judge.py, which
 scores the resulting diffs.
 
+Each task runs OAH_SAMPLES times (default 3) and reports the modal outcome, not a single
+sample — LLM output is stochastic enough that a single run isn't a trustworthy verdict (observed
+directly: e2_bug_index passed once and failed on an immediate rerun with no code changes in
+between). All N samples are saved, not just the modal one, so variance itself is inspectable.
+
 Runs entirely locally — no GPU, no serving, no RunPod pod. Requires ANTHROPIC_API_KEY.
 """
-import difflib
 import json
 import os
 import sys
@@ -22,52 +26,45 @@ from harness.core.agent import Agent
 from harness.core.anthropic_model_client import AnthropicModelClient
 from harness.core.trajectory import TrajectoryLogger
 
+from run_utils import compute_diffs, majority_outcome, reset_scratch
 from run_transformers_eval import FILES as SET_A_FILES, TASKS as SET_A_TASKS
 from run_transformers_eval2 import FILES as SET_B_FILES, TASKS as SET_B_TASKS
 
 SCRATCH = os.environ.get("OAH_CLAUDE_SCRATCH", "/tmp/oah_claude_eval_scratch")
 RESULTS_DIR = os.environ.get("OAH_RESULTS_DIR", "/tmp/oah_claude_eval_results")
 MODEL = os.environ.get("OAH_CLAUDE_MODEL", "claude-sonnet-5")
-
-
-def reset_scratch(scratch_dir: str, files: dict) -> None:
-    os.makedirs(scratch_dir, exist_ok=True)
-    for name, content in files.items():
-        with open(os.path.join(scratch_dir, name), "w") as f:
-            f.write(content)
+SAMPLES = int(os.environ.get("OAH_SAMPLES", "3"))
 
 
 def run_set(label: str, tasks: list, files: dict, client: AnthropicModelClient) -> dict:
     scratch = os.path.join(SCRATCH, label)
     results = []
     for task, verify in tasks:
-        reset_scratch(scratch, files)
-        os.chdir(scratch)
-        agent = Agent(model_client=client, confirm_fn=lambda *_: True)
-        logger = TrajectoryLogger(output_dir=f"{RESULTS_DIR}/{label}")
-        agent.run(task, logger=logger, verify_cmd=verify)
-        outcome = json.loads(logger.path.read_text())["outcome"]
+        samples = []
+        for sample_idx in range(SAMPLES):
+            reset_scratch(scratch, files)
+            os.chdir(scratch)
+            agent = Agent(model_client=client, confirm_fn=lambda *_: True)
+            logger = TrajectoryLogger(output_dir=f"{RESULTS_DIR}/{label}/sample{sample_idx}")
+            agent.run(task, logger=logger, verify_cmd=verify)
+            outcome = json.loads(logger.path.read_text())["outcome"]
+            diffs = compute_diffs(scratch, files)
+            samples.append({"outcome": outcome, "diffs": diffs})
 
-        # Diff every file the task touched — needed so the judge can actually see what
-        # changed, not just trust the pass/fail outcome.
-        diffs = {}
-        for name, original in files.items():
-            final_path = os.path.join(scratch, name)
-            final = open(final_path).read() if os.path.exists(final_path) else "<file missing>"
-            if final != original:
-                diff = "".join(difflib.unified_diff(
-                    original.splitlines(keepends=True),
-                    final.splitlines(keepends=True),
-                    fromfile=f"a/{name}", tofile=f"b/{name}",
-                ))
-                diffs[name] = diff
-
-        results.append({"task": task, "outcome": outcome, "diffs": diffs})
-        print(f"[claude/{label}] {outcome:30s} | {task[:60]}", flush=True)
+        outcome, representative = majority_outcome(samples)
+        results.append({
+            "task": task,
+            "outcome": outcome,
+            "diffs": representative["diffs"],
+            "samples": samples,
+        })
+        agreement = sum(1 for s in samples if s["outcome"] == outcome)
+        flag = "" if agreement == SAMPLES else f"  (agreement {agreement}/{SAMPLES} — noisy)"
+        print(f"[claude/{label}] {outcome:30s} | {task[:60]}{flag}", flush=True)
 
     passed = sum(1 for r in results if r["outcome"] == "completed_verified_pass")
     print(f"[claude/{label}] TOTAL: {passed}/{len(results)}", flush=True)
-    return {"label": label, "passed": passed, "total": len(results), "results": results}
+    return {"label": label, "passed": passed, "total": len(results), "samples": SAMPLES, "results": results}
 
 
 if __name__ == "__main__":
@@ -81,5 +78,5 @@ if __name__ == "__main__":
         json.dump({"set_a": set_a_summary, "set_b": set_b_summary}, f, indent=2)
 
     print("=== DONE ===")
-    print(f"Set A: {set_a_summary['passed']}/{set_a_summary['total']}")
-    print(f"Set B: {set_b_summary['passed']}/{set_b_summary['total']}")
+    print(f"Set A: {set_a_summary['passed']}/{set_a_summary['total']} (n={SAMPLES} samples/task)")
+    print(f"Set B: {set_b_summary['passed']}/{set_b_summary['total']} (n={SAMPLES} samples/task)")

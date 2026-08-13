@@ -1,5 +1,12 @@
 """Runs the 10 held-out eval tasks in-process against base and base+LoRA, via LocalModelClient.
 No serving, no HTTP, no vLLM — everything happens inside this one Python process.
+
+Each task runs OAH_SAMPLES times (default 1 here — GPU inference is slow enough that multi-
+sampling both base and LoRA by default would meaningfully lengthen every eval run; pass
+OAH_SAMPLES=3 explicitly when you want the more trustworthy modal-outcome verdict, e.g. before
+reporting a checkpoint as beating/not-beating base). See run_claude_via_harness.py, which
+defaults to 3 since it's cheap/local, and eval/README.md's harness-quality loop section for why
+single-sample verdicts are noisy.
 """
 import json
 import os
@@ -11,12 +18,15 @@ from harness.core.agent import Agent
 from harness.core.local_model_client import LocalModelClient
 from harness.core.trajectory import TrajectoryLogger
 
+from run_utils import compute_diffs, majority_outcome, reset_scratch
+
 SCRATCH = "/workspace/eval_scratch"
 BASE_MODEL = "Qwen/Qwen2.5-Coder-7B-Instruct"
 ADAPTER_PATH = os.environ.get(
     "OAH_ADAPTER_PATH", "/workspace/open-agent-harness/training/out/qwen2.5-coder-7b-oah-lora"
 )
 RESULTS_DIR = os.environ.get("OAH_RESULTS_DIR", "/workspace/eval_results")
+SAMPLES = int(os.environ.get("OAH_SAMPLES", "1"))
 
 TASKS = [
     ("Add a cylinder_volume(r, h) function to h1_area_calc.py that returns pi*r^2*h using the math module",
@@ -55,27 +65,26 @@ FILES = {
 }
 
 
-def reset_scratch():
-    os.makedirs(SCRATCH, exist_ok=True)
-    for name, content in FILES.items():
-        with open(os.path.join(SCRATCH, name), "w") as f:
-            f.write(content)
-
-
 def run_eval(label: str, client: LocalModelClient) -> dict:
     results = []
     for task, verify in TASKS:
-        reset_scratch()
-        os.chdir(SCRATCH)
-        agent = Agent(model_client=client, confirm_fn=lambda *_: True)
-        logger = TrajectoryLogger(output_dir=f"{RESULTS_DIR}/{label}")
-        agent.run(task, logger=logger, verify_cmd=verify)
-        outcome = json.loads(logger.path.read_text())["outcome"]
-        results.append({"task": task[:60], "outcome": outcome})
+        samples = []
+        for sample_idx in range(SAMPLES):
+            reset_scratch(SCRATCH, FILES)
+            os.chdir(SCRATCH)
+            agent = Agent(model_client=client, confirm_fn=lambda *_: True)
+            logger = TrajectoryLogger(output_dir=f"{RESULTS_DIR}/{label}/sample{sample_idx}")
+            agent.run(task, logger=logger, verify_cmd=verify)
+            outcome = json.loads(logger.path.read_text())["outcome"]
+            diffs = compute_diffs(SCRATCH, FILES)
+            samples.append({"outcome": outcome, "diffs": diffs})
+
+        outcome, representative = majority_outcome(samples)
+        results.append({"task": task, "outcome": outcome, "diffs": representative["diffs"], "samples": samples})
         print(f"[{label}] {outcome:30s} | {task[:60]}", flush=True)
     passed = sum(1 for r in results if r["outcome"] == "completed_verified_pass")
     print(f"[{label}] TOTAL: {passed}/{len(results)}", flush=True)
-    return {"label": label, "passed": passed, "total": len(results), "results": results}
+    return {"label": label, "passed": passed, "total": len(results), "samples": SAMPLES, "results": results}
 
 
 if __name__ == "__main__":

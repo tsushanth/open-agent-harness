@@ -183,11 +183,22 @@ credentials in its environment.
    surfaced a real *design* gap worth a future fix: the harness currently treats any
    unparseable tool-call text as the model's final answer and ends the session, instead of
    telling the model its JSON was malformed and giving it a turn to retry.
-   [`eval/judge.py`](eval/judge.py) adds an LLM-judge pass that rates each resulting diff on
-   correctness/cleanliness (not just verify's binary pass/fail) and cross-references the same
-   task's outcome from the current best Qwen checkpoint — flagging 5 tasks where Claude succeeds
-   via this harness but Qwen's checkpoint still fails, real evidence that most of Qwen's
-   remaining gap is model capability, not the scaffold.
+   [`eval/judge.py`](eval/judge.py) adds an LLM-judge pass that, in its first version, rated
+   each resulting diff on independent correctness/cleanliness scores and cross-referenced the
+   same task's outcome from the current best Qwen checkpoint — flagging 5 tasks where Claude
+   succeeds via this harness but Qwen's checkpoint still fails, real evidence that most of
+   Qwen's remaining gap is model capability, not the scaffold. Two follow-up methodology fixes
+   (2026-08-13), both closing gaps between this loop and its actual RLHF/DPO inspiration: (1)
+   every eval script now runs each task `OAH_SAMPLES` times and reports the modal outcome
+   (`eval/run_utils.py`) — single-sample verdicts were provably noisy (the exact same 18 tasks
+   flipped outcome on reruns with no code changes); re-running Claude at `OAH_SAMPLES=3` got a
+   clean Set A 10/10, Set B 8/8, and majority-voting *surfaced*, rather than hid, a real known
+   refactor-verify weakness on one task rather than reporting it as a random one-off failure.
+   (2) the judge moved from independent absolute scores to **pairwise** comparison — closer to
+   what DPO's preference model actually does (Bradley-Terry over pairs, not a scalar reward per
+   side) and better-calibrated for an LLM judge in practice. Absolute scoring remains as a
+   fallback until Qwen's eval scripts (now also diff-saving) produce a fresh checkpoint to
+   compare head-to-head.
 6. **Release** (not started, deliberately) — publish the LoRA adapter (and merged weights, if
    licensing allows) on Hugging Face. Needs a Hugging Face account/token — not yet configured.
    The best checkpoint so far (44 examples, no bug-fix data, gentle recipe) beats base on Set A but

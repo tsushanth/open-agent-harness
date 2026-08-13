@@ -1,5 +1,7 @@
 """Second held-out eval set: bug-fix and refactor tasks, not "add a function." Same
 in-process LocalModelClient approach as run_transformers_eval.py, distinct task set.
+
+Same OAH_SAMPLES multi-sampling behavior as run_transformers_eval.py — see its docstring.
 """
 import json
 import os
@@ -11,10 +13,13 @@ from harness.core.agent import Agent
 from harness.core.local_model_client import LocalModelClient
 from harness.core.trajectory import TrajectoryLogger
 
+from run_utils import compute_diffs, majority_outcome, reset_scratch
+
 SCRATCH = "/workspace/eval_scratch2"
 BASE_MODEL = "Qwen/Qwen2.5-Coder-7B-Instruct"
 ADAPTER_PATH = os.environ.get("OAH_ADAPTER_PATH", "/workspace/open-agent-harness/training/out/qwen2.5-coder-7b-oah-lora")
 RESULTS_DIR = os.environ.get("OAH_RESULTS_DIR", "/workspace/eval_results2")
+SAMPLES = int(os.environ.get("OAH_SAMPLES", "1"))
 
 TASKS = [
     ("is_valid_age in e1_bug_wrongcompare.py should also accept age==0 for newborns, but currently excludes it because it uses > instead of >=. Fix it",
@@ -47,27 +52,26 @@ FILES = {
 }
 
 
-def reset_scratch():
-    os.makedirs(SCRATCH, exist_ok=True)
-    for name, content in FILES.items():
-        with open(os.path.join(SCRATCH, name), "w") as f:
-            f.write(content)
-
-
 def run_eval(label: str, client: LocalModelClient) -> dict:
     results = []
     for task, verify in TASKS:
-        reset_scratch()
-        os.chdir(SCRATCH)
-        agent = Agent(model_client=client, confirm_fn=lambda *_: True)
-        logger = TrajectoryLogger(output_dir=f"{RESULTS_DIR}/{label}")
-        agent.run(task, logger=logger, verify_cmd=verify)
-        outcome = json.loads(logger.path.read_text())["outcome"]
-        results.append({"task": task[:60], "outcome": outcome})
+        samples = []
+        for sample_idx in range(SAMPLES):
+            reset_scratch(SCRATCH, FILES)
+            os.chdir(SCRATCH)
+            agent = Agent(model_client=client, confirm_fn=lambda *_: True)
+            logger = TrajectoryLogger(output_dir=f"{RESULTS_DIR}/{label}/sample{sample_idx}")
+            agent.run(task, logger=logger, verify_cmd=verify)
+            outcome = json.loads(logger.path.read_text())["outcome"]
+            diffs = compute_diffs(SCRATCH, FILES)
+            samples.append({"outcome": outcome, "diffs": diffs})
+
+        outcome, representative = majority_outcome(samples)
+        results.append({"task": task, "outcome": outcome, "diffs": representative["diffs"], "samples": samples})
         print(f"[{label}] {outcome:30s} | {task[:60]}", flush=True)
     passed = sum(1 for r in results if r["outcome"] == "completed_verified_pass")
     print(f"[{label}] TOTAL: {passed}/{len(results)}", flush=True)
-    return {"label": label, "passed": passed, "total": len(results), "results": results}
+    return {"label": label, "passed": passed, "total": len(results), "samples": SAMPLES, "results": results}
 
 
 if __name__ == "__main__":

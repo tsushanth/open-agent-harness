@@ -1,0 +1,146 @@
+[
+  {
+    "set": "set_a",
+    "task": "Add a cylinder_volume(r, h) function to h1_area_calc.py that returns p",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 4,
+    "rationale": "Correctly implements cylinder_volume using math.pi as required, though importing math inside the function mirrors existing style but a top-level import would be cleaner."
+  },
+  {
+    "set": "set_a",
+    "task": "Add a ship(sku, qty) method to the Warehouse class in h2_inventory2.py",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 4,
+    "cleanliness": 5,
+    "rationale": "Implements ship() correctly matching receive()'s style, but lacks validation for insufficient stock or missing sku which could be considered edge cases."
+  },
+  {
+    "set": "set_a",
+    "task": "Add a snake_case(s) function to h3_string_ops.py that converts a title",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "Correctly implements snake_case conversion using split/lower/join with no extraneous changes."
+  },
+  {
+    "set": "set_a",
+    "task": "Add a max_depth(s) function to h4_bracket_check.py that returns the ma",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 4,
+    "cleanliness": 5,
+    "rationale": "Correctly computes max nesting depth for well-formed strings but may return misleading results for unbalanced input (negative depth not handled), otherwise clean and minimal."
+  },
+  {
+    "set": "set_a",
+    "task": "Add a top_player() method to the Leaderboard class in h5_leaderboard.p",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "Correctly returns the player with the highest score using max with key, handles empty entries, and makes no unnecessary changes."
+  },
+  {
+    "set": "set_a",
+    "task": "Add a km_to_miles(km) function to h6_unit_convert.py that reverses mil",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "Correctly adds an inverse conversion function using the same constant, with clean minimal formatting."
+  },
+  {
+    "set": "set_a",
+    "task": "Add a highest_priority() method to the TaskQueue class in h7_task_queu",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "Correctly implements highest_priority() with proper handling of empty tasks and minimal, clean addition."
+  },
+  {
+    "set": "set_a",
+    "task": "Add a normalize_hex(s) function to h8_validators2.py that lowercases a",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "The function correctly lowercases a hex color string as requested, with clean minimal changes and no leftover code."
+  },
+  {
+    "set": "set_a",
+    "task": "Add a matrix_max(m) function to h9_matrix2.py that returns the maximum",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "Correctly adds matrix_max mirroring existing style with no unnecessary changes."
+  },
+  {
+    "set": "set_a",
+    "task": "Add a longest_decreasing_streak(nums) function to h10_streak.py, mirro",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": null,
+    "cleanliness": null,
+    "rationale": "judge output unparseable: "
+  },
+  {
+    "set": "set_b",
+    "task": "is_valid_age in e1_bug_wrongcompare.py should also accept age==0 for n",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "Correctly changes > to >= to include age==0 with a minimal, clean diff."
+  },
+  {
+    "set": "set_b",
+    "task": "get_last_two in e2_bug_index.py has a bug \u2014 it returns the last item d",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "The fix correctly returns the last two distinct items using slicing, with a minimal, clean change."
+  },
+  {
+    "set": "set_b",
+    "task": "product_of_list in e3_bug_accumulator.py always returns 0 because the ",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "Correctly changes the accumulator initial value from 0 to 1, fixing the bug with a minimal, clean change."
+  },
+  {
+    "set": "set_b",
+    "task": "contains_word in e4_bug_stringcase.py should be case-insensitive but c",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "Correctly makes the containment check case-insensitive with a minimal, clean change."
+  },
+  {
+    "set": "set_b",
+    "task": "The Counter class in e5_bug_default_state.py uses a class-level attrib",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "The fix correctly moves total to an instance attribute via __init__ and updates increment to use self, giving each instance an independent counter with minimal clean changes."
+  },
+  {
+    "set": "set_b",
+    "task": "describe_temp in e6_refactor_repeat.py repeats the same f-string messa",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "Correctly consolidates the repeated f-string into a single construction after the if/elif chain, preserving identical behavior with minimal, clean changes."
+  },
+  {
+    "set": "set_b",
+    "task": "can_checkout in e7_refactor_condition.py has needlessly nested if/else",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "The refactor correctly collapses the nested conditionals into a single boolean expression preserving identical behavior with no leftover code."
+  },
+  {
+    "set": "set_b",
+    "task": "Downloader.__init__ in e8_multistep_cache.py hardcodes retries=0 and t",
+    "claude_outcome": "completed_verified_pass",
+    "correctness": 5,
+    "cleanliness": 5,
+    "rationale": "Correctly replaces hardcoded values with Config constants as requested, with no extraneous changes."
+  }
+]

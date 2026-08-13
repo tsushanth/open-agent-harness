@@ -116,10 +116,51 @@ fails, all judged correctness=5/cleanliness=5 on Claude's side. That's real evid
 Qwen's remaining gap on Set B is model capability, not a harness defect — consistent with, and
 now more directly evidenced than, the isolation test's corpus-composition finding.
 
-**Next harness-quality iteration:** fix the retry-on-malformed-JSON gap above, then re-run to see
-if it closes the one remaining Claude failure mode observed so far; consider running this against
-the fine-tuned LoRA checkpoint too (not just base Qwen) once the full-corpus retrain lands, to see
-whether SFT closes any of the 5 flagged gaps on its own.
+### Methodology update: multi-sampling and pairwise judging (2026-08-13)
+
+The first pass above was single-sample per task — one run, pass or fail. That's noisier than it
+looks: rerunning the exact same 18 tasks with no code changes flipped two outcomes (`e2` passed
+then failed, `e5` failed then passed after the parser fix, but on a *different* rerun `e2` also
+flipped on its own). A single sample can't tell "the harness has a bug" apart from "the model
+just happened to sample badly this once."
+
+Fix: `run_claude_via_harness.py` and both `run_transformers_eval*.py` now run every task
+`OAH_SAMPLES` times (default 3 for the Claude script, since it's cheap/local; default 1 for the
+GPU scripts, opt in explicitly for a trustworthy verdict) and report the **modal** outcome via
+`eval/run_utils.py`'s `majority_outcome`, logging when a task's samples disagreed (flagged
+`agreement N/SAMPLES — noisy` in the console output) rather than silently picking one.
+
+Re-running Claude via the harness at `OAH_SAMPLES=3`:
+[`claude-via-harness-2026-08-13-n3.json`](claude-via-harness-2026-08-13-n3.json) — **Set A
+10/10, Set B 8/8**, both clean. Both prior single-sample failures (`e2`, `e5`) were noise, not
+harness bugs — majority voting confirmed it directly rather than requiring another manual
+diff-reading pass. One task (`e7`, a refactor) showed 2/3 agreement, and inspecting the outlier
+sample found it wasn't a new bug at all: `completed_no_tools_used_verified_pass` — Claude made
+zero changes that sample, and the original, unrefactored code already satisfies the behavioral
+verify command. That's the exact refactor-verify weakness documented back in
+`batch-2026-08-08-e/README.md` (batch h) and again in `batch-2026-08-09-i/README.md` — a
+behavioral-only check can't distinguish "refactored" from "left untouched" when the original
+already behaves correctly. Multi-sampling didn't just average out noise here, it *surfaced* a
+real instance of a known weakness that a single lucky sample would have hidden.
+
+`eval/judge.py` was also rewritten from independent absolute 1-5 scores per solution to
+**pairwise** comparison — given two runs' diffs for the same task, the judge picks a winner
+head-to-head instead of two separately-calibrated scores. This is the actual mechanism DPO's
+preference model relies on (Bradley-Terry over pairs, not a scalar reward per side), and LLM
+judges are much better calibrated doing this than emitting a trustworthy absolute score. Absolute
+scoring is kept as a fallback (`judge_absolute`) for when only one side has a diff to judge —
+still the case for Qwen today, since `run_transformers_eval*.py` only started saving diffs in
+this update; the next real Qwen run (the queued full-corpus retrain) will produce diffs on both
+sides, at which point the judge can compare them head-to-head instead of against a bare
+pass/fail outcome.
+
+**Next harness-quality iteration:** fix the retry-on-malformed-JSON gap above (unrelated to
+`e7`'s flakiness, which turned out to be the known refactor-verify weakness, not a parsing bug);
+consider whether Set B's remaining refactor tasks need the same structural-check treatment
+(`inspect.getsource()` assertions) already applied to the training-corpus refactor tasks in
+batches f/g/i, since `e7`'s verify command is still purely behavioral. Then, once the
+full-corpus retrain produces a fresh Qwen checkpoint with saved diffs, run the pairwise judge
+Claude-vs-Qwen-LoRA for real instead of the outcome-only cross-reference used so far.
 
 ## Next steps
 
