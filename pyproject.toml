@@ -12,7 +12,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0.0"]
+dev = ["pytest>=8.0.0", "anthropic>=0.30.0"]
+eval = ["transformers>=4.40.0", "peft>=0.11.0", "anthropic>=0.30.0"]
 
 [project.scripts]
 oah = "harness.cli:main"

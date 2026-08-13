@@ -73,6 +73,54 @@ dependency tree, so this needed zero additional installs and no networking, no s
 second pod — training and eval ran back-to-back inside one pod. Much slower per-request than vLLM
 (no continuous batching), irrelevant for a one-off 20-task eval.
 
+## Harness-quality loop (Claude via the same protocol)
+
+A second, orthogonal evaluation, separate from LoRA-vs-base: run the exact same Set A / Set B
+tasks through the harness with **Claude** as the model client
+(`harness/core/anthropic_model_client.py`, `eval/run_claude_via_harness.py`), not to ask "is
+Claude smarter" (obviously) but to isolate whether the harness's own scaffold — system prompt,
+tool schema, text-based `<tool_call>` protocol — has defects independent of the small model's
+raw capability. `AnthropicModelClient` deliberately never uses Claude's native tool-use API; it
+gets the identical text protocol Qwen gets, so a Claude failure here is a harness bug, not a
+"give Claude a better interface" result.
+
+**First run (2026-08-12):** Set A 10/10, Set B 7/8 —
+[`claude-via-harness-2026-08-12.json`](claude-via-harness-2026-08-12.json). Found a real bug on
+the first pass: a well-formed `write_file` call was silently dropped because its multi-line file
+content had a literal raw newline instead of an escaped `\n`. That's invalid JSON under Python's
+default strict parser, which raised no visible error anywhere — the tool call was just discarded,
+and the fix was never applied. **Fixed** by parsing with `strict=False` in both `_try_parse` and
+`_scan_bare_json_objects` (`harness/core/tool_parser.py`) — Python's json module supports this
+exact case natively. Regression test:
+`test_multiline_content_with_raw_newlines_still_parses`. Re-ran after the fix and confirmed the
+previously-failing task now passes.
+
+A second, different failure in the same re-run (`get_last_two`/e2) was genuinely malformed JSON
+(a missing brace, a real model typo, not a raw-newline issue) — `strict=False` correctly can't
+and shouldn't parse that. This surfaced a real **design gap, not yet fixed**: the harness
+currently treats any unparseable tool-call text as the model's final answer and ends the session
+immediately, with no chance for the model to notice and retry. A more resilient loop would
+detect "this looked like an attempted tool call but didn't parse" and feed that back as a tool
+result (e.g. `<tool_result>Error: your tool call wasn't valid JSON, try again</tool_result>`)
+instead of silently treating it as a finished turn. Worth doing before the next harness-quality
+run — right now a transient JSON typo costs the whole task instead of one wasted turn.
+
+`eval/judge.py` adds an LLM-judge pass: a separate Claude call rates each resulting diff on
+correctness and cleanliness (catches things a narrow verify command can't, like
+`batch-2026-08-09-i`'s dead-code case — behaviorally correct but with leftover unreachable code)
+and cross-references the same task's outcome from the current best Qwen checkpoint
+(`isolation-no-bugfix-set-a/b-2026-08-08.json`). Result:
+[`claude-via-harness-2026-08-12-judged.json`](claude-via-harness-2026-08-12-judged.json) — 5
+tasks (h5, h6, e4, e5, e8) where Claude passes via this harness but Qwen's checkpoint still
+fails, all judged correctness=5/cleanliness=5 on Claude's side. That's real evidence most of
+Qwen's remaining gap on Set B is model capability, not a harness defect — consistent with, and
+now more directly evidenced than, the isolation test's corpus-composition finding.
+
+**Next harness-quality iteration:** fix the retry-on-malformed-JSON gap above, then re-run to see
+if it closes the one remaining Claude failure mode observed so far; consider running this against
+the fine-tuned LoRA checkpoint too (not just base Qwen) once the full-corpus retrain lands, to see
+whether SFT closes any of the 5 flagged gaps on its own.
+
 ## Next steps
 
 **Update (2026-08-08 / 2026-08-09):** ran three follow-up trajectory batches specifically to grow

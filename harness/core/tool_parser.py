@@ -58,7 +58,7 @@ def _scan_bare_json_objects(content: str) -> list[ParsedToolCall]:
     Uses JSONDecoder.raw_decode (rather than a balanced-braces regex, which can't
     handle nested objects in `arguments` correctly) to find valid JSON objects
     anywhere a '{' appears."""
-    decoder = json.JSONDecoder()
+    decoder = json.JSONDecoder(strict=False)
     calls: list[ParsedToolCall] = []
     for idx, char in enumerate(content):
         if char != "{":
@@ -82,7 +82,12 @@ def strip_tool_call_markup(content: str) -> str:
 
 def _try_parse(raw_json: str) -> ParsedToolCall | None:
     try:
-        data = json.loads(raw_json)
+        # strict=False: models regularly emit multi-line file content (e.g. a write_file
+        # call's "content" argument) with a literal raw newline instead of an escaped \n.
+        # That's invalid JSON under the default strict parser, which silently drops the
+        # entire tool call rather than raising anything visible — observed directly against
+        # Claude, not just the smaller open model, so this isn't a weak-model-only issue.
+        data = json.loads(raw_json, strict=False)
     except json.JSONDecodeError:
         return None
     name = data.get("name")

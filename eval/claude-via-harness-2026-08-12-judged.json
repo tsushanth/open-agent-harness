@@ -1,0 +1,164 @@
+[
+  {
+    "set": "set_a",
+    "task": "Add a cylinder_volume(r, h) function to h1_area_calc.py that returns p",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 4,
+    "rationale": "Correctly adds the requested function using math.pi consistent with existing style, though importing math locally inside the function is slightly less clean than a top-level import.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_a",
+    "task": "Add a ship(sku, qty) method to the Warehouse class in h2_inventory2.py",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 4,
+    "claude_cleanliness": 5,
+    "rationale": "Adds the requested ship method correctly mirroring receive's style, though it doesn't guard against negative stock or missing sku edge cases which might be considered part of a full solution.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_a",
+    "task": "Add a snake_case(s) function to h3_string_ops.py that converts a title",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Adds a correctly implemented snake_case function following the existing code style with proper spacing, fully satisfying the task.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_a",
+    "task": "Add a max_depth(s) function to h4_bracket_check.py that returns the ma",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Adds a correct, self-contained max_depth function with minimal, clean diff that doesn't disturb existing code.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_a",
+    "task": "Add a top_player() method to the Leaderboard class in h5_leaderboard.p",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Correctly adds top_player() method returning the highest-scoring player, handles empty entries gracefully, and the diff is minimal and clean.",
+    "qwen_outcome": "completed_verified_fail"
+  },
+  {
+    "set": "set_a",
+    "task": "Add a km_to_miles(km) function to h6_unit_convert.py that reverses mil",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Correctly adds the inverse conversion function using proper formatting consistent with the existing file.",
+    "qwen_outcome": "completed_verified_fail"
+  },
+  {
+    "set": "set_a",
+    "task": "Add a highest_priority() method to the TaskQueue class in h7_task_queu",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Correctly implements highest_priority() with proper empty-list handling, using a clean idiomatic max() with key function and no extraneous changes.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_a",
+    "task": "Add a normalize_hex(s) function to h8_validators2.py that lowercases a",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 4,
+    "claude_cleanliness": 5,
+    "rationale": "Adds a simple, correct normalize_hex function matching the request, though it lacks validation/edge-case handling for non-hex input.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_a",
+    "task": "Add a matrix_max(m) function to h9_matrix2.py that returns the maximum",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Correctly adds a concise matrix_max function matching the style of matrix_sum with no extraneous changes.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_a",
+    "task": "Add a longest_decreasing_streak(nums) function to h10_streak.py, mirro",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "The new function correctly mirrors longest_streak's logic but checks for a decrease of 1, and the diff contains no extraneous changes.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_b",
+    "task": "is_valid_age in e1_bug_wrongcompare.py should also accept age==0 for n",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Minimal correct fix changing > to >= as requested, with no extraneous changes.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_b",
+    "task": "get_last_two in e2_bug_index.py has a bug \u2014 it returns the last item d",
+    "claude_outcome": "completed_no_tools_used_verified_fail",
+    "claude_correctness": 1,
+    "claude_cleanliness": 1,
+    "rationale": "No file was changed at all.",
+    "qwen_outcome": "completed_verified_fail"
+  },
+  {
+    "set": "set_b",
+    "task": "product_of_list in e3_bug_accumulator.py always returns 0 because the ",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Minimal one-line fix correctly initializes accumulator to 1, resolving the bug with no extraneous changes.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_b",
+    "task": "contains_word in e4_bug_stringcase.py should be case-insensitive but c",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Minimal, correct fix making contains_word case-insensitive with no extraneous changes.",
+    "qwen_outcome": "completed_verified_fail"
+  },
+  {
+    "set": "set_b",
+    "task": "The Counter class in e5_bug_default_state.py uses a class-level attrib",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "The diff correctly moves 'total' to an instance attribute via __init__ and updates increment to use self, fully fixing the shared-state bug with a minimal, clean change.",
+    "qwen_outcome": "completed_verified_fail"
+  },
+  {
+    "set": "set_b",
+    "task": "describe_temp in e6_refactor_repeat.py repeats the same f-string messa",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Correctly refactors to build category per branch then construct message once, preserving identical behavior with a minimal, clean diff.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_b",
+    "task": "can_checkout in e7_refactor_condition.py has needlessly nested if/else",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Correctly collapses nested if/else with == True comparisons into a single equivalent boolean expression, with no extraneous changes.",
+    "qwen_outcome": "completed_verified_pass"
+  },
+  {
+    "set": "set_b",
+    "task": "Downloader.__init__ in e8_multistep_cache.py hardcodes retries=0 and t",
+    "claude_outcome": "completed_verified_pass",
+    "claude_correctness": 5,
+    "claude_cleanliness": 5,
+    "rationale": "Minimal, targeted fix correctly replacing hardcoded values with the existing Config constants.",
+    "qwen_outcome": "completed_no_tools_used_verified_fail"
+  }
+]

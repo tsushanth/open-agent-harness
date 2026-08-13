@@ -167,7 +167,28 @@ credentials in its environment.
    [`harness/core/local_model_client.py`](harness/core/local_model_client.py) — a `transformers`+
    `peft` backend that runs in-process, no serving layer, now a real reusable part of the harness
    (drop-in `ModelClient` replacement, tested, used successfully across 7 eval runs).
-5. **Release** (not started, deliberately) — publish the LoRA adapter (and merged weights, if
+5. **Harness-quality loop** (new, first pass done) — a second, orthogonal evaluation axis to
+   SFT: run the exact same held-out tasks through the harness with Claude as the model client
+   (`harness/core/anthropic_model_client.py`, `eval/run_claude_via_harness.py`) instead of Qwen.
+   Since Claude uses the identical text-based `<tool_call>` protocol — no native tool-calling
+   API, same system prompt, same tools — a Claude failure inside this harness is evidence of a
+   *harness* defect, not a small-model capability gap. First run: Set A 10/10, Set B 7/8 (see
+   [`eval/claude-via-harness-2026-08-12.json`](eval/claude-via-harness-2026-08-12.json)), and it
+   immediately found a real bug: a well-formed `write_file` call was silently dropped because its
+   multi-line file content contained a literal raw newline instead of `\n`, which Python's
+   strict JSON parser rejects with no visible error — the fix was simply never applied, and
+   nothing in the harness surfaced why. Fixed by parsing with `strict=False`
+   (`harness/core/tool_parser.py`), confirmed by re-running the same task after the fix. A second,
+   rarer failure (structurally malformed JSON — a genuine model typo, not a leniency gap)
+   surfaced a real *design* gap worth a future fix: the harness currently treats any
+   unparseable tool-call text as the model's final answer and ends the session, instead of
+   telling the model its JSON was malformed and giving it a turn to retry.
+   [`eval/judge.py`](eval/judge.py) adds an LLM-judge pass that rates each resulting diff on
+   correctness/cleanliness (not just verify's binary pass/fail) and cross-references the same
+   task's outcome from the current best Qwen checkpoint — flagging 5 tasks where Claude succeeds
+   via this harness but Qwen's checkpoint still fails, real evidence that most of Qwen's
+   remaining gap is model capability, not the scaffold.
+6. **Release** (not started, deliberately) — publish the LoRA adapter (and merged weights, if
    licensing allows) on Hugging Face. Needs a Hugging Face account/token — not yet configured.
    The best checkpoint so far (44 examples, no bug-fix data, gentle recipe) beats base on Set A but
    not yet Set B — real progress, not yet a green light. Publishing now would still ship a
